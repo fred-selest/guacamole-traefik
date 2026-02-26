@@ -1,12 +1,12 @@
 # 🖥️ Guacamole Stack — Accès distant sécurisé
 
-> Déploiement automatisé d'Apache Guacamole avec Traefik v2, Portainer et thème personnalisé sur Ubuntu 22.04/24.04.
+> Déploiement interactif d'Apache Guacamole avec Traefik v2, Portainer et thème personnalisé sur Ubuntu 22.04/24.04.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-22.04%20%7C%2024.04-E95420?logo=ubuntu)](https://ubuntu.com)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)](https://docker.com)
 [![Traefik](https://img.shields.io/badge/Traefik-v2.11-24A1C1?logo=traefikproxy)](https://traefik.io)
-[![Shell Check](https://github.com/YOUR_USERNAME/guacamole-stack/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/YOUR_USERNAME/guacamole-stack/actions/workflows/shellcheck.yml)
+[![ShellCheck](https://github.com/fred-selest/guacamole-traefik/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/fred-selest/guacamole-traefik/actions/workflows/shellcheck.yml)
 
 ---
 
@@ -15,8 +15,9 @@
 - [Architecture](#-architecture)
 - [Prérequis](#-prérequis)
 - [Installation rapide](#-installation-rapide)
+- [Ce que les scripts demandent](#-ce-que-les-scripts-demandent)
 - [Scripts](#-scripts)
-- [Configuration](#-configuration)
+- [Configuration avancée](#-configuration-avancée)
 - [Sécurité](#-sécurité)
 - [Dépannage](#-dépannage)
 - [Roadmap](#-roadmap)
@@ -31,9 +32,9 @@ Internet
     ▼
 Traefik v2.11 (reverse proxy + Let's Encrypt)
     │
-    ├── guac.votre-domaine.com     → Guacamole (RDP/SSH/VNC)
-    ├── traefik.votre-domaine.com  → Dashboard Traefik (BasicAuth)
-    └── portainer.votre-domaine.com → Portainer CE
+    ├── guac.ton-domaine.com      → Guacamole (RDP/SSH/VNC)
+    ├── traefik.ton-domaine.com   → Dashboard Traefik (BasicAuth)
+    └── portainer.ton-domaine.com → Portainer CE
             │
             ▼
     Réseau Docker "proxy" (externe)
@@ -65,13 +66,10 @@ Traefik v2.11 (reverse proxy + Let's Encrypt)
 
 - Serveur **Ubuntu 22.04 ou 24.04** (VPS ou dédié)
 - Accès **root** ou **sudo**
-- **3 entrées DNS** de type A pointant vers l'IP du serveur :
-  ```
-  guac.votre-domaine.com        → IP_SERVEUR
-  traefik.votre-domaine.com     → IP_SERVEUR
-  portainer.votre-domaine.com   → IP_SERVEUR
-  ```
 - Ports **80** et **443** ouverts
+- Un **nom de domaine** avec accès à la gestion DNS
+
+> Le script 1 affiche l'IP du serveur à la fin. Configure les DNS **après** l'avoir exécuté, avant de lancer le script 2.
 
 ---
 
@@ -85,16 +83,16 @@ cd guacamole-traefik
 # 2. Rendre les scripts exécutables
 chmod +x scripts/*.sh
 
-# 3. Installer les prérequis (Docker, UFW, Fail2ban...)
+# 3. Installer les prérequis — le script pose les questions
 sudo bash scripts/1_prerequisites.sh
 
-# 4. Configurer les DNS puis redémarrer
+# 4. Configurer les DNS (voir IP affichée à la fin du script 1), puis redémarrer
 sudo reboot
 
-# 5. Déployer la stack complète
+# 5. Déployer la stack — le script pose toutes les questions
 sudo bash scripts/2_deploy_guacamole.sh
 
-# 6. (Optionnel) Appliquer le thème sombre
+# 6. (Optionnel) Appliquer le thème sombre — le script pose les questions
 sudo bash scripts/3_theme_guacamole.sh
 
 # 7. (Optionnel) Configurer les sauvegardes automatiques MySQL
@@ -104,21 +102,76 @@ sudo bash scripts/4_backup_mysql.sh install
 sudo bash scripts/5_configure_ldap.sh
 ```
 
-> ⚠️ **Avant le script 2**, éditer les variables en tête de fichier :
-> ```bash
-> DOMAIN_GUAC="guac.votre-domaine.com"
-> DOMAIN_TRAEFIK="traefik.votre-domaine.com"
-> DOMAIN_PORTAINER="portainer.votre-domaine.com"
-> EMAIL="votre@email.com"
-> TIMEZONE="Europe/Paris"   # Optionnel — défaut : Europe/Paris
-> ```
-
-> ⚠️ **Avant le script 1**, la timezone peut aussi être passée en variable :
-> ```bash
-> sudo TIMEZONE="America/New_York" bash scripts/1_prerequisites.sh
-> ```
-
 Les credentials sont automatiquement sauvegardés dans `/root/credentials-DATE.txt`.
+
+---
+
+## 💬 Ce que les scripts demandent
+
+### Script 1 — `1_prerequisites.sh`
+
+```
+── Configuration ───────────────────────────
+  ? Timezone                          [Europe/Paris]
+  ? Port SSH                          [22]
+
+── Récapitulatif ───────────────────────────
+  Lancer l'installation ? [O/n]
+```
+
+À la fin, le script affiche l'IP publique du serveur et rappelle de créer les enregistrements DNS avant de lancer le script 2.
+
+---
+
+### Script 2 — `2_deploy_guacamole.sh`
+
+```
+── Domaines ────────────────────────────────
+  ? Domaine Guacamole                 [guac.votre-domaine.com]
+  ? Domaine Traefik                   [traefik.votre-domaine.com]
+  ? Domaine Portainer                 [portainer.votre-domaine.com]
+
+── Let's Encrypt ───────────────────────────
+  ? Email administrateur              [admin@votre-domaine.com]
+
+── Système ─────────────────────────────────
+  ? Timezone                          [Europe/Paris]
+
+── LDAP / Active Directory (optionnel) ─────
+  ? Activer l'authentification LDAP/AD ? [o/N]
+  → Si oui :
+      ? Serveur LDAP / AD
+      ? Port LDAP                     [389]
+      ? Chiffrement (none/starttls/ssl)
+      ? Base DN utilisateurs
+      ? Attribut login (sAMAccountName / uid)
+      ? DN compte de service          (optionnel)
+      ? Mot de passe service          (optionnel)
+      ? Base DN groupes               (optionnel)
+
+── Vérification DNS ────────────────────────
+  (Affiche les 3 enregistrements DNS à vérifier avec l'IP du serveur)
+  Les DNS sont configurés ? [O/n]
+```
+
+---
+
+### Script 3 — `3_theme_guacamole.sh`
+
+```
+── Identité ────────────────────────────────
+  ? Nom affiché sur le logo           [Accès Distant]
+  ? Sous-titre du logo                [Accès distant sécurisé]
+  ? Texte du pied de page             [Accès sécurisé]
+
+── Couleurs (format hex ex: #2563eb) ───────
+  ? Couleur principale                [#2563eb]
+  ? Couleur accent                    [#3b82f6]
+  ? Couleur fond sombre               [#0f172a]
+  ? Couleur fond carte                [#1e293b]
+
+  Générer et installer le thème ? [O/n]
+```
 
 ---
 
@@ -142,6 +195,7 @@ Déploie la stack complète :
 - Docker Compose avec réseaux isolés
 - Certificats Let's Encrypt automatiques
 - Portainer inclus
+- LDAP/AD configurable en interactif
 - Sauvegarde credentials dans `/root/`
 
 ### `scripts/3_theme_guacamole.sh`
@@ -150,7 +204,6 @@ Installe un thème sombre moderne :
 - Thème sombre avec variables CSS personnalisables
 - Logo SVG généré automatiquement
 - Persiste aux mises à jour Guacamole
-- Branding entièrement personnalisable via variables (`COMPANY_NAME`, `COMPANY_SUBTITLE`, couleurs…)
 
 ### `scripts/4_backup_mysql.sh`
 Sauvegarde automatique de la base MySQL :
@@ -168,20 +221,31 @@ Intégration LDAP / Active Directory :
 - Support des groupes AD (synchronisation des permissions)
 - Test de connectivité avant application
 - Backup automatique du docker-compose avant modification
-- Restauration simple en cas de problème
 
 ---
 
-## ⚙️ Configuration
+## ⚙️ Configuration avancée
 
-### Personnaliser le thème
+Les scripts peuvent être pilotés par **variables d'environnement** pour les déploiements automatisés (CI/CD, Ansible, etc.). Les variables passées en env sautent les questions interactives correspondantes.
 
-Éditer les variables en tête de `scripts/3_theme_guacamole.sh` ou les passer en env :
+### Déploiement non-interactif (exemple)
 
 ```bash
-COMPANY_NAME="Votre Société" \
+DOMAIN_GUAC="guac.mon-domaine.com" \
+DOMAIN_TRAEFIK="traefik.mon-domaine.com" \
+DOMAIN_PORTAINER="portainer.mon-domaine.com" \
+EMAIL="admin@mon-domaine.com" \
+TIMEZONE="Europe/Paris" \
+sudo bash scripts/2_deploy_guacamole.sh
+```
+
+### Thème non-interactif
+
+```bash
+COMPANY_NAME="Mon Entreprise" \
 COMPANY_SUBTITLE="Accès distant sécurisé" \
 PRIMARY_COLOR="#2563eb" \
+FOOTER_TEXT="Accès sécurisé" \
 sudo bash scripts/3_theme_guacamole.sh
 ```
 
@@ -198,23 +262,6 @@ sudo bash scripts/4_backup_mysql.sh install
 sudo /usr/local/sbin/guacamole-backup list
 sudo /usr/local/sbin/guacamole-backup backup
 sudo /usr/local/sbin/guacamole-backup restore
-```
-
-### Configurer LDAP / Active Directory
-
-Pré-requis : un compte de service avec droits de lecture sur l'annuaire.
-
-```bash
-# Active Directory
-LDAP_HOSTNAME=dc.mondomaine.com \
-LDAP_USER_BASE_DN="OU=Utilisateurs,DC=mondomaine,DC=com" \
-LDAP_SEARCH_BIND_DN="CN=guac-svc,OU=Services,DC=mondomaine,DC=com" \
-LDAP_SEARCH_BIND_PASSWORD="MotDePasseService" \
-LDAP_GROUP_BASE_DN="OU=Groupes,DC=mondomaine,DC=com" \
-sudo bash scripts/5_configure_ldap.sh
-
-# Mode interactif (sans variables)
-sudo bash scripts/5_configure_ldap.sh
 ```
 
 ### Structure des fichiers sur le serveur
@@ -336,7 +383,7 @@ htpasswd -nbm admin "NOUVEAU_MOT_DE_PASSE"
 - [x] Certificats Let's Encrypt automatiques
 - [x] Sécurité renforcée (UFW, Fail2ban, headers, rate limit)
 - [x] Thème sombre personnalisé et configurable
-- [x] Paramétrage complet des variables (timezone, domaines, branding)
+- [x] Installation entièrement interactive (domaines, email, LDAP, thème)
 - [x] Backup automatique MySQL (cron + rotation + restauration)
 - [x] Intégration LDAP / Active Directory
 - [ ] VPN Tailscale multi-sites (subnet router)
