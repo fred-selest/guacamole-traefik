@@ -1,0 +1,51 @@
+# ============================================================
+#  Traefik — Configuration dynamique (exemple)
+#  Copier sur le serveur : /opt/traefik/config/dynamic.yml
+#
+#  ⚠️  Le hash basicAuth doit être généré sur le serveur :
+#     htpasswd -nbm admin "VOTRE_MOT_DE_PASSE"
+#  Le hash utilise des $ simples (pas $$ comme dans les labels Docker)
+# ============================================================
+
+http:
+  middlewares:
+
+    secHeaders:
+      headers:
+        browserXssFilter: true
+        contentTypeNosniff: true
+        frameDeny: true
+        sslRedirect: true
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        customResponseHeaders:
+          X-Robots-Tag: "noindex, nofollow"
+          server: ""
+
+    rateLimit:
+      rateLimit:
+        average: 30
+        burst: 60
+        period: 1m
+
+    compress:
+      compress: {}
+
+    traefik-auth:
+      basicAuth:
+        users:
+          - "admin:HASH_GENERE_PAR_HTPASSWD"   # ← Remplacer
+
+  routers:
+    traefik-dashboard:
+      rule: "Host(`traefik.votre-domaine.com`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+      entrypoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      service: api@internal
+      middlewares:
+        - traefik-auth
+        - secHeaders

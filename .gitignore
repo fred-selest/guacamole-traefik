@@ -1,0 +1,64 @@
+# ============================================================
+#  .gitignore — Guacamole Stack
+#  NE JAMAIS committer de credentials, clés ou certificats !
+# ============================================================
+
+# ── Credentials et secrets ──────────────────────────────────
+.env
+*.env
+credentials*.txt
+*-credentials*.txt
+secrets/
+*.secret
+
+# ── Certificats et clés ─────────────────────────────────────
+acme.json
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+certs/
+
+# ── Logs ────────────────────────────────────────────────────
+logs/
+*.log
+*.log.*
+
+# ── Données Docker volumes ──────────────────────────────────
+data/
+volumes/
+mysql-data/
+
+# ── Fichiers de build / temp ────────────────────────────────
+*.jar
+/tmp/
+guac-theme-build/
+
+# ── OS ──────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ── Éditeurs ────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+
+# ── Git ─────────────────────────────────────────────────────
+*.orig
+*.rej
+
+# ── Backup ──────────────────────────────────────────────────
+*.bak
+*.bak.*
+*.backup

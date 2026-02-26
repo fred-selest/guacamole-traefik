@@ -1,0 +1,40 @@
+name: ShellCheck
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'scripts/**.sh'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'scripts/**.sh'
+
+jobs:
+  shellcheck:
+    name: ShellCheck — Validation des scripts bash
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Installer ShellCheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Vérifier les scripts
+        run: |
+          echo "🔍 Analyse ShellCheck des scripts..."
+          shellcheck --severity=warning scripts/*.sh
+          echo "✅ Tous les scripts sont valides"
+
+      - name: Vérifier les permissions
+        run: |
+          echo "🔒 Vérification des permissions..."
+          for f in scripts/*.sh; do
+            if [ ! -x "$f" ]; then
+              echo "⚠️  $f n'est pas exécutable"
+            else
+              echo "✅ $f"
+            fi
+          done

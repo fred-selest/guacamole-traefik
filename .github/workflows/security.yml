@@ -1,0 +1,39 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Scan automatique chaque lundi à 8h
+    - cron: '0 8 * * 1'
+
+jobs:
+  secret-scan:
+    name: Détection de secrets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan des secrets avec Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker-lint:
+    name: Lint docker-compose templates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Vérifier la syntaxe YAML des configs
+        run: |
+          pip install yamllint
+          find config/ -name "*.yml" -o -name "*.yaml" | xargs yamllint -d relaxed || true

@@ -1,0 +1,54 @@
+# ============================================================
+#  Traefik v2.11 — Configuration statique (exemple)
+#  Copier sur le serveur : /opt/traefik/traefik.yml
+#  Remplacer YOUR_EMAIL par votre adresse Let's Encrypt
+# ============================================================
+
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+log:
+  level: WARN
+  filePath: /var/log/traefik/traefik.log
+
+accessLog:
+  filePath: /var/log/traefik/access.log
+  bufferingSize: 100
+
+api:
+  dashboard: true
+  insecure: false
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure:
+    address: ":443"
+    http:
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - secHeaders@file
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: YOUR_EMAIL@example.com    # ← Remplacer
+      storage: /certs/acme.json
+      httpChallenge:
+        entryPoint: web
+
+providers:
+  docker:
+    exposedByDefault: false
+    network: proxy
+  file:
+    filename: /config/dynamic.yml
+    watch: true
