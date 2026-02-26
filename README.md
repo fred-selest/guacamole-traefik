@@ -96,6 +96,12 @@ sudo bash scripts/2_deploy_guacamole.sh
 
 # 6. (Optionnel) Appliquer le thème sombre
 sudo bash scripts/3_theme_guacamole.sh
+
+# 7. (Optionnel) Configurer les sauvegardes automatiques MySQL
+sudo bash scripts/4_backup_mysql.sh install
+
+# 8. (Optionnel) Intégrer LDAP / Active Directory
+sudo bash scripts/5_configure_ldap.sh
 ```
 
 > ⚠️ **Avant le script 2**, éditer les variables en tête de fichier :
@@ -104,6 +110,12 @@ sudo bash scripts/3_theme_guacamole.sh
 > DOMAIN_TRAEFIK="traefik.votre-domaine.com"
 > DOMAIN_PORTAINER="portainer.votre-domaine.com"
 > EMAIL="votre@email.com"
+> TIMEZONE="Europe/Paris"   # Optionnel — défaut : Europe/Paris
+> ```
+
+> ⚠️ **Avant le script 1**, la timezone peut aussi être passée en variable :
+> ```bash
+> sudo TIMEZONE="America/New_York" bash scripts/1_prerequisites.sh
 > ```
 
 Les credentials sont automatiquement sauvegardés dans `/root/credentials-DATE.txt`.
@@ -138,6 +150,25 @@ Installe un thème sombre moderne :
 - Thème sombre avec variables CSS personnalisables
 - Logo SVG généré automatiquement
 - Persiste aux mises à jour Guacamole
+- Branding entièrement personnalisable via variables (`COMPANY_NAME`, `COMPANY_SUBTITLE`, couleurs…)
+
+### `scripts/4_backup_mysql.sh`
+Sauvegarde automatique de la base MySQL :
+- Backup quotidien via cron (heure configurable)
+- Compression gzip automatique
+- Rotation configurable (défaut : 7 jours)
+- Modes : `install` | `backup` | `restore` | `list`
+- Restauration interactive avec confirmation
+
+### `scripts/5_configure_ldap.sh`
+Intégration LDAP / Active Directory :
+- Configuration interactive ou via variables d'environnement
+- Compatible Active Directory (sAMAccountName) et OpenLDAP (uid)
+- Chiffrement : LDAP / StartTLS / LDAPS (SSL)
+- Support des groupes AD (synchronisation des permissions)
+- Test de connectivité avant application
+- Backup automatique du docker-compose avant modification
+- Restauration simple en cas de problème
 
 ---
 
@@ -145,13 +176,45 @@ Installe un thème sombre moderne :
 
 ### Personnaliser le thème
 
-Éditer les variables en tête de `scripts/3_theme_guacamole.sh` :
+Éditer les variables en tête de `scripts/3_theme_guacamole.sh` ou les passer en env :
 
 ```bash
-COMPANY_NAME="Votre Société"
-COMPANY_SUBTITLE="Accès distant sécurisé"
-PRIMARY_COLOR="#2563eb"    # Couleur principale
-DARK_BG="#0f172a"          # Fond sombre
+COMPANY_NAME="Votre Société" \
+COMPANY_SUBTITLE="Accès distant sécurisé" \
+PRIMARY_COLOR="#2563eb" \
+sudo bash scripts/3_theme_guacamole.sh
+```
+
+### Configurer les sauvegardes MySQL
+
+```bash
+# Installation avec paramètres personnalisés
+BACKUP_DIR=/var/backups/guacamole \
+RETENTION_DAYS=14 \
+BACKUP_TIME=03:00 \
+sudo bash scripts/4_backup_mysql.sh install
+
+# Commandes disponibles
+sudo /usr/local/sbin/guacamole-backup list
+sudo /usr/local/sbin/guacamole-backup backup
+sudo /usr/local/sbin/guacamole-backup restore
+```
+
+### Configurer LDAP / Active Directory
+
+Pré-requis : un compte de service avec droits de lecture sur l'annuaire.
+
+```bash
+# Active Directory
+LDAP_HOSTNAME=dc.mondomaine.com \
+LDAP_USER_BASE_DN="OU=Utilisateurs,DC=mondomaine,DC=com" \
+LDAP_SEARCH_BIND_DN="CN=guac-svc,OU=Services,DC=mondomaine,DC=com" \
+LDAP_SEARCH_BIND_PASSWORD="MotDePasseService" \
+LDAP_GROUP_BASE_DN="OU=Groupes,DC=mondomaine,DC=com" \
+sudo bash scripts/5_configure_ldap.sh
+
+# Mode interactif (sans variables)
+sudo bash scripts/5_configure_ldap.sh
 ```
 
 ### Structure des fichiers sur le serveur
@@ -174,7 +237,7 @@ DARK_BG="#0f172a"          # Fond sombre
     └── access.log
 
 /opt/guacamole-extensions/
-└── selest-theme.jar            # Thème personnalisé
+└── custom-theme.jar            # Thème personnalisé
 ```
 
 ### Réseaux Docker
@@ -272,12 +335,13 @@ htpasswd -nbm admin "NOUVEAU_MOT_DE_PASSE"
 - [x] Déploiement automatisé Guacamole + Traefik + Portainer
 - [x] Certificats Let's Encrypt automatiques
 - [x] Sécurité renforcée (UFW, Fail2ban, headers, rate limit)
-- [x] Thème sombre personnalisé
-- [ ] Intégration LDAP / Active Directory
+- [x] Thème sombre personnalisé et configurable
+- [x] Paramétrage complet des variables (timezone, domaines, branding)
+- [x] Backup automatique MySQL (cron + rotation + restauration)
+- [x] Intégration LDAP / Active Directory
 - [ ] VPN Tailscale multi-sites (subnet router)
 - [ ] Monitoring Prometheus + Grafana
 - [ ] Alertes Uptime Kuma
-- [ ] Backup automatique MySQL
 - [ ] Enregistrement des sessions RDP
 - [ ] GitHub Actions — validation ShellCheck
 
