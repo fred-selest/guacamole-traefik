@@ -24,6 +24,32 @@ log "Système détecté : $PRETTY_NAME"
 [[ "$ID" != "ubuntu" ]] && warn "Ce script est prévu pour Ubuntu"
 
 # ════════════════════════════════════════
+section "Configuration"
+# ════════════════════════════════════════
+
+ask() {
+  local prompt="$1" default="$2" varname="$3" val
+  printf "  ${BLUE}?${NC} %-35s ${YELLOW}[%s]${NC} : " "$prompt" "$default"
+  read -r val </dev/tty
+  printf -v "$varname" '%s' "${val:-$default}"
+}
+
+echo ""
+echo -e "  Appuyez sur Entrée pour conserver la valeur par défaut."
+echo ""
+ask "Timezone" "$TIMEZONE" TIMEZONE
+ask "Port SSH" "$SSH_PORT"  SSH_PORT
+echo ""
+echo -e "${BLUE}  ── Récapitulatif ──────────────────────────────────────${NC}"
+echo -e "  Timezone : ${GREEN}${TIMEZONE}${NC}"
+echo -e "  Port SSH : ${GREEN}${SSH_PORT}${NC}"
+echo -e "${BLUE}  ────────────────────────────────────────────────────────${NC}"
+echo ""
+printf "  Lancer l'installation ? [O/n] : "
+read -r _confirm </dev/tty
+[[ "${_confirm,,}" =~ ^(n|non|no)$ ]] && { echo "Annulé."; exit 0; }
+
+# ════════════════════════════════════════
 section "1. Mise à jour du système"
 # ════════════════════════════════════════
 apt-get update -qq
@@ -221,9 +247,14 @@ echo -e "  Fail2ban       : $(fail2ban-client status 2>/dev/null | head -1 || ec
 echo -e "  Timezone       : $(timedatectl | grep 'Time zone' | xargs)"
 echo ""
 echo -e "${YELLOW}  ⚠️  Avant de lancer le script 2, configure les DNS :${NC}"
-echo -e "  Type A  |  guac.votre-domaine.com        |  ${SERVER_IP}"
-echo -e "  Type A  |  traefik.votre-domaine.com     |  ${SERVER_IP}"
-echo -e "  Type A  |  portainer.votre-domaine.com   |  ${SERVER_IP}"
+echo -e "  IP de ce serveur : ${GREEN}${SERVER_IP}${NC}"
+echo -e ""
+echo -e "  Crée 3 entrées de type A pointant vers ${SERVER_IP} :"
+echo -e "  Type A  |  guac.TON-DOMAINE.com          |  ${SERVER_IP}"
+echo -e "  Type A  |  traefik.TON-DOMAINE.com        |  ${SERVER_IP}"
+echo -e "  Type A  |  portainer.TON-DOMAINE.com      |  ${SERVER_IP}"
+echo -e ""
+echo -e "  Les noms exacts seront configurés au lancement du script 2."
 echo ""
 warn "Redémarre le serveur : sudo reboot"
 echo ""

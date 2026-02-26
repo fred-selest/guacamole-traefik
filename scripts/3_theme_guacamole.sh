@@ -34,6 +34,45 @@ command -v zip    &>/dev/null || apt-get install -y -qq zip
 command -v docker &>/dev/null || err "Docker manquant"
 
 # ════════════════════════════════════════
+section "Configuration du thème"
+# ════════════════════════════════════════
+
+ask() {
+  local prompt="$1" default="$2" varname="$3" val
+  printf "  ${BLUE}?${NC} %-40s ${YELLOW}[%s]${NC} : " "$prompt" "$default"
+  read -r val </dev/tty
+  printf -v "$varname" '%s' "${val:-$default}"
+}
+
+echo ""
+echo -e "  Appuyez sur Entrée pour conserver la valeur par défaut."
+echo ""
+echo -e "${BLUE}  ── Identité ─────────────────────────────────────────────${NC}"
+ask "Nom affiché sur le logo"       "$COMPANY_NAME"     COMPANY_NAME
+ask "Sous-titre du logo"            "$COMPANY_SUBTITLE" COMPANY_SUBTITLE
+ask "Texte du pied de page"         "$FOOTER_TEXT"      FOOTER_TEXT
+
+echo ""
+echo -e "${BLUE}  ── Couleurs (format hex ex: #2563eb) ───────────────────${NC}"
+ask "Couleur principale"            "$PRIMARY_COLOR"    PRIMARY_COLOR
+ask "Couleur accent"                "$ACCENT_COLOR"     ACCENT_COLOR
+ask "Couleur fond sombre"           "$DARK_BG"          DARK_BG
+ask "Couleur fond carte"            "$CARD_BG"          CARD_BG
+
+echo ""
+echo -e "${BLUE}  ── Récapitulatif ──────────────────────────────────────${NC}"
+echo -e "  Nom              : ${GREEN}${COMPANY_NAME}${NC}"
+echo -e "  Sous-titre       : ${GREEN}${COMPANY_SUBTITLE}${NC}"
+echo -e "  Pied de page     : ${GREEN}${FOOTER_TEXT}${NC}"
+echo -e "  Couleur principale : ${GREEN}${PRIMARY_COLOR}${NC}"
+echo -e "  Couleur accent   : ${GREEN}${ACCENT_COLOR}${NC}"
+echo -e "${BLUE}  ────────────────────────────────────────────────────────${NC}"
+echo ""
+printf "  Générer et installer le thème ? [O/n] : "
+read -r _confirm </dev/tty
+[[ "${_confirm,,}" =~ ^(n|non|no)$ ]] && { echo "Annulé."; exit 0; }
+
+# ════════════════════════════════════════
 section "1. Préparation des répertoires"
 # ════════════════════════════════════════
 rm -rf "$THEME_BUILD_DIR"
