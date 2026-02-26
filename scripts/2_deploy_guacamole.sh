@@ -47,6 +47,94 @@ command -v python3    &>/dev/null || err "python3 manquant"
 docker compose version &>/dev/null 2>&1 || err "docker compose plugin manquant"
 
 # ════════════════════════════════════════
+section "Configuration"
+# ════════════════════════════════════════
+
+ask() {
+  local prompt="$1" default="$2" varname="$3" val
+  printf "  ${BLUE}?${NC} %-40s ${YELLOW}[%s]${NC} : " "$prompt" "$default"
+  read -r val </dev/tty
+  printf -v "$varname" '%s' "${val:-$default}"
+}
+
+ask_yn() {
+  local prompt="$1" default="$2" varname="$3" val hint
+  [[ "$default" == "true" ]] && hint="O/n" || hint="o/N"
+  printf "  ${BLUE}?${NC} %-40s ${YELLOW}[%s]${NC} : " "$prompt" "$hint"
+  read -r val </dev/tty
+  case "${val,,}" in
+    o|oui|y|yes) printf -v "$varname" 'true'  ;;
+    n|non|no)    printf -v "$varname" 'false' ;;
+    *)           printf -v "$varname" "$default" ;;
+  esac
+}
+
+echo ""
+echo -e "  Appuyez sur Entrée pour conserver la valeur par défaut."
+
+# ── Domaines ──────────────────────────────────────────────────
+echo ""
+echo -e "${BLUE}  ── Domaines ────────────────────────────────────────────${NC}"
+ask "Domaine Guacamole"  "$DOMAIN_GUAC"      DOMAIN_GUAC
+ask "Domaine Traefik"    "$DOMAIN_TRAEFIK"   DOMAIN_TRAEFIK
+ask "Domaine Portainer"  "$DOMAIN_PORTAINER" DOMAIN_PORTAINER
+
+# ── Let's Encrypt ─────────────────────────────────────────────
+echo ""
+echo -e "${BLUE}  ── Let's Encrypt ───────────────────────────────────────${NC}"
+ask "Email administrateur (Let's Encrypt)" "$EMAIL" EMAIL
+
+# ── Système ───────────────────────────────────────────────────
+echo ""
+echo -e "${BLUE}  ── Système ──────────────────────────────────────────────${NC}"
+ask "Timezone" "$TIMEZONE" TIMEZONE
+
+# ── LDAP / Active Directory ───────────────────────────────────
+echo ""
+echo -e "${BLUE}  ── LDAP / Active Directory (optionnel) ─────────────────${NC}"
+ask_yn "Activer l'authentification LDAP/AD ?" "$LDAP_ENABLED" LDAP_ENABLED
+
+if [[ "$LDAP_ENABLED" == "true" ]]; then
+  echo ""
+  ask "Serveur LDAP / AD"                     "$LDAP_HOSTNAME"           LDAP_HOSTNAME
+  ask "Port LDAP"                             "$LDAP_PORT"               LDAP_PORT
+  ask "Chiffrement (none / starttls / ssl)"   "$LDAP_ENCRYPTION_METHOD"  LDAP_ENCRYPTION_METHOD
+  ask "Base DN utilisateurs"                  "$LDAP_USER_BASE_DN"       LDAP_USER_BASE_DN
+  ask "Attribut login (sAMAccountName / uid)" "$LDAP_USERNAME_ATTRIBUTE" LDAP_USERNAME_ATTRIBUTE
+  echo ""
+  echo -e "  ${YELLOW}Compte de service (laisser vide si anonyme) :${NC}"
+  ask "DN compte de service"   "${LDAP_SEARCH_BIND_DN:-}"       LDAP_SEARCH_BIND_DN
+  ask "Mot de passe service"   "${LDAP_SEARCH_BIND_PASSWORD:-}" LDAP_SEARCH_BIND_PASSWORD
+  echo ""
+  echo -e "  ${YELLOW}Groupes (laisser vide pour ignorer) :${NC}"
+  ask "Base DN groupes"        "${LDAP_GROUP_BASE_DN:-}"        LDAP_GROUP_BASE_DN
+  ask "Filtre groupes"         "${LDAP_GROUP_SEARCH_FILTER:-}"  LDAP_GROUP_SEARCH_FILTER
+fi
+
+# ── Récapitulatif ─────────────────────────────────────────────
+SERVER_IP_PRE=$(curl -s --max-time 5 ifconfig.me 2>/dev/null || echo "IP inconnue")
+echo ""
+echo -e "${BLUE}  ── Récapitulatif ──────────────────────────────────────${NC}"
+echo -e "  Guacamole  : ${GREEN}https://${DOMAIN_GUAC}/guacamole${NC}"
+echo -e "  Traefik    : ${GREEN}https://${DOMAIN_TRAEFIK}/dashboard/${NC}"
+echo -e "  Portainer  : ${GREEN}https://${DOMAIN_PORTAINER}${NC}"
+echo -e "  Email TLS  : ${GREEN}${EMAIL}${NC}"
+echo -e "  Timezone   : ${GREEN}${TIMEZONE}${NC}"
+[[ "$LDAP_ENABLED" == "true" ]] && \
+  echo -e "  LDAP       : ${GREEN}${LDAP_HOSTNAME}:${LDAP_PORT} (${LDAP_ENCRYPTION_METHOD})${NC}" || \
+  echo -e "  LDAP       : désactivé"
+echo -e "${BLUE}  ────────────────────────────────────────────────────────${NC}"
+echo ""
+echo -e "${YELLOW}  ⚠️  Vérification DNS — ces enregistrements doivent pointer vers ${SERVER_IP_PRE} :${NC}"
+echo -e "  Type A  |  ${DOMAIN_GUAC}  |  ${SERVER_IP_PRE}"
+echo -e "  Type A  |  ${DOMAIN_TRAEFIK}  |  ${SERVER_IP_PRE}"
+echo -e "  Type A  |  ${DOMAIN_PORTAINER}  |  ${SERVER_IP_PRE}"
+echo ""
+printf "  Les DNS sont configurés et le déploiement peut commencer ? [O/n] : "
+read -r _confirm </dev/tty
+[[ "${_confirm,,}" =~ ^(n|non|no)$ ]] && { echo "Annulé."; exit 0; }
+
+# ════════════════════════════════════════
 section "1. Génération des mots de passe"
 # ════════════════════════════════════════
 gen_pass() { openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c ${1:-32}; }
