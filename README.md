@@ -79,8 +79,8 @@ Traefik v2.11 (reverse proxy + Let's Encrypt)
 
 ```bash
 # 1. Cloner le dépôt
-git clone https://github.com/YOUR_USERNAME/guacamole-stack.git
-cd guacamole-stack
+git clone https://github.com/fred-selest/guacamole-traefik.git
+cd guacamole-traefik
 
 # 2. Rendre les scripts exécutables
 chmod +x scripts/*.sh
@@ -358,8 +358,8 @@ MIT — voir [LICENSE](LICENSE)
 Les PRs sont les bienvenues. Pour les changements majeurs, ouvrir d'abord une issue.
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/guacamole-stack.git
-cd guacamole-stack
+git clone https://github.com/fred-selest/guacamole-traefik.git
+cd guacamole-traefik
 # Créer une branche
 git checkout -b feature/ma-fonctionnalite
 # Tester les scripts avec ShellCheck
