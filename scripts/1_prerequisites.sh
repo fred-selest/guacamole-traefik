@@ -6,6 +6,11 @@ set -euo pipefail
 #  Usage : sudo bash 1_prerequisites.sh
 # ============================================================
 
+# ---- CONFIG (à adapter si besoin) --------------------------
+TIMEZONE="${TIMEZONE:-Europe/Paris}"   # ex: America/New_York, UTC, Asia/Tokyo
+SSH_PORT="${SSH_PORT:-22}"
+# ------------------------------------------------------------
+
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
 log()     { echo -e "${GREEN}[+]${NC} $1"; }
 warn()    { echo -e "${YELLOW}[!]${NC} $1"; }
@@ -48,7 +53,7 @@ apt-get install -y -qq \
 # ════════════════════════════════════════
 section "3. Timezone"
 # ════════════════════════════════════════
-timedatectl set-timezone Europe/Paris
+timedatectl set-timezone "$TIMEZONE"
 log "Timezone : $(timedatectl | grep 'Time zone')"
 
 # ════════════════════════════════════════
@@ -88,7 +93,6 @@ ufw --force reset
 ufw default deny incoming
 ufw default allow outgoing
 
-SSH_PORT=${SSH_PORT:-22}
 ufw allow "$SSH_PORT/tcp"  comment "SSH"
 ufw allow 80/tcp           comment "HTTP Let's Encrypt"
 ufw allow 443/tcp          comment "HTTPS Traefik"
@@ -217,9 +221,9 @@ echo -e "  Fail2ban       : $(fail2ban-client status 2>/dev/null | head -1 || ec
 echo -e "  Timezone       : $(timedatectl | grep 'Time zone' | xargs)"
 echo ""
 echo -e "${YELLOW}  ⚠️  Avant de lancer le script 2, configure les DNS :${NC}"
-echo -e "  Type A  |  guac.selest.info        |  ${SERVER_IP}"
-echo -e "  Type A  |  traefik.selest.info     |  ${SERVER_IP}"
-echo -e "  Type A  |  portainer.selest.info   |  ${SERVER_IP}"
+echo -e "  Type A  |  guac.votre-domaine.com        |  ${SERVER_IP}"
+echo -e "  Type A  |  traefik.votre-domaine.com     |  ${SERVER_IP}"
+echo -e "  Type A  |  portainer.votre-domaine.com   |  ${SERVER_IP}"
 echo ""
 warn "Redémarre le serveur : sudo reboot"
 echo ""

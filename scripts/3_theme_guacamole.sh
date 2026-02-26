@@ -2,22 +2,25 @@
 set -euo pipefail
 
 # ============================================================
-#  THEME GUACAMOLE — Extension branding Selest Informatique
+#  THEME GUACAMOLE — Extension thème sombre personnalisé
 #  Usage : sudo bash 3_theme_guacamole.sh
 #  Installe un thème sombre moderne avec logo personnalisé
 # ============================================================
 
-# ---- CONFIG ------------------------------------------------
-COMPANY_NAME="Selest Informatique"
-COMPANY_SUBTITLE="Accès distant sécurisé"
-PRIMARY_COLOR="#2563eb"       # Bleu principal
-ACCENT_COLOR="#3b82f6"        # Bleu accent
-DARK_BG="#0f172a"             # Fond sombre
-CARD_BG="#1e293b"             # Fond carte
-TEXT_COLOR="#f1f5f9"          # Texte clair
+# ---- CONFIG (à adapter avant de lancer) --------------------
+COMPANY_NAME="${COMPANY_NAME:-Accès Distant}"
+COMPANY_SUBTITLE="${COMPANY_SUBTITLE:-Accès distant sécurisé}"
+PRIMARY_COLOR="${PRIMARY_COLOR:-#2563eb}"    # Bleu principal
+ACCENT_COLOR="${ACCENT_COLOR:-#3b82f6}"     # Bleu accent
+DARK_BG="${DARK_BG:-#0f172a}"              # Fond sombre
+CARD_BG="${CARD_BG:-#1e293b}"             # Fond carte
+TEXT_COLOR="${TEXT_COLOR:-#f1f5f9}"        # Texte clair
 GUAC_EXTENSIONS_DIR="/opt/guacamole-home/extensions"
 THEME_BUILD_DIR="/tmp/guac-theme-build"
-THEME_JAR="selest-theme.jar"
+THEME_JAR="custom-theme.jar"
+THEME_NAMESPACE="custom-theme"
+FOOTER_TEXT="${FOOTER_TEXT:-Accès sécurisé}"
+FOOTER_YEAR="${FOOTER_YEAR:-$(date +%Y)}"
 # ------------------------------------------------------------
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
@@ -112,7 +115,7 @@ section "3. Fichier CSS du thème"
 # ════════════════════════════════════════
 cat > "$THEME_BUILD_DIR/theme.css" <<'THEMECSS'
 /* ============================================================
-   SELEST INFORMATIQUE — Thème Guacamole sombre moderne
+   Thème Guacamole sombre moderne — personnalisable
    ============================================================ */
 
 /* Import Google Fonts */
@@ -448,7 +451,7 @@ log "CSS du thème créé"
 # ════════════════════════════════════════
 section "4. Page de login personnalisée"
 # ════════════════════════════════════════
-cat > "$THEME_BUILD_DIR/loginPage.html" <<'LOGINHTML'
+cat > "$THEME_BUILD_DIR/loginPage.html.tpl" <<'LOGINHTML'
 <!DOCTYPE html>
 <html>
 <head>
@@ -473,21 +476,28 @@ cat > "$THEME_BUILD_DIR/loginPage.html" <<'LOGINHTML'
     margin-top: 24px;
     font-family: 'Inter', sans-serif;
   ">
-    © 2025 Selest Informatique — Accès sécurisé
+    © FOOTER_YEAR COMPANY_NAME — FOOTER_TEXT
   </p>
 </div>
 </body>
 </html>
 LOGINHTML
 
+# Substituer les variables dans le template du footer
+sed -e "s/FOOTER_YEAR/${FOOTER_YEAR}/g" \
+    -e "s/COMPANY_NAME/${COMPANY_NAME}/g" \
+    -e "s/FOOTER_TEXT/${FOOTER_TEXT}/g" \
+    "$THEME_BUILD_DIR/loginPage.html.tpl" > "$THEME_BUILD_DIR/loginPage.html"
+rm "$THEME_BUILD_DIR/loginPage.html.tpl"
+
 # ════════════════════════════════════════
 section "5. Manifeste de l'extension"
 # ════════════════════════════════════════
-cat > "$THEME_BUILD_DIR/guac-manifest.json" <<'MANIFEST'
+cat > "$THEME_BUILD_DIR/guac-manifest.json" <<MANIFEST
 {
   "guacamoleVersion" : "*",
-  "name"             : "Selest Informatique Theme",
-  "namespace"        : "selest-theme",
+  "name"             : "${COMPANY_NAME} Theme",
+  "namespace"        : "${THEME_NAMESPACE}",
   "css"              : [ "theme.css" ],
   "resources"        : {
     "images/logo.svg" : "image/svg+xml"
@@ -573,7 +583,7 @@ log "Attente du démarrage (~20s)..."
 sleep 20
 
 # Vérifier que l'extension est chargée
-docker logs guacamole 2>&1 | grep -i "selest\|theme\|extension\|loaded" | tail -5 || true
+docker logs guacamole 2>&1 | grep -i "theme\|extension\|loaded" | tail -5 || true
 
 # ════════════════════════════════════════
 section "Résumé"
@@ -584,7 +594,7 @@ echo -e "${GREEN}  ✅  Thème installé avec succès !${NC}"
 echo -e "${GREEN}════════════════════════════════════════════════${NC}"
 echo ""
 echo -e "  🎨 Extension : /opt/guacamole-extensions/${THEME_JAR}"
-echo -e "  🌐 Vérifier  : https://guac.selest.info/guacamole/"
+echo -e "  🌐 Vérifier  : https://${DOMAIN_GUAC:-guac.votre-domaine.com}/guacamole/"
 echo ""
 echo -e "${YELLOW}  Personnalisation :${NC}"
 echo -e "  - Modifier les couleurs : éditer les variables CSS dans"

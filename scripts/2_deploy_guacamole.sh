@@ -2,20 +2,34 @@
 set -euo pipefail
 
 # ============================================================
-#  DEPLOY GUACAMOLE + TRAEFIK + PORTAINER — selest.info
+#  DEPLOY GUACAMOLE + TRAEFIK + PORTAINER
 #  Usage : sudo bash 2_deploy_guacamole.sh
 #  Prérequis : avoir exécuté 1_prerequisites.sh + reboot
 #              DNS configurés avant de lancer ce script
 # ============================================================
 
-# ---- CONFIG (à adapter si besoin) --------------------------
-DOMAIN_GUAC="guac.selest.info"
-DOMAIN_TRAEFIK="traefik.selest.info"
-DOMAIN_PORTAINER="portainer.selest.info"
-EMAIL="contact@selest.info"
+# ---- CONFIG (à adapter avant de lancer) --------------------
+DOMAIN_GUAC="${DOMAIN_GUAC:-guac.votre-domaine.com}"
+DOMAIN_TRAEFIK="${DOMAIN_TRAEFIK:-traefik.votre-domaine.com}"
+DOMAIN_PORTAINER="${DOMAIN_PORTAINER:-portainer.votre-domaine.com}"
+EMAIL="${EMAIL:-admin@votre-domaine.com}"
+TIMEZONE="${TIMEZONE:-Europe/Paris}"
 BASE_DIR="/opt/guacamole"
 TRAEFIK_DIR="/opt/traefik"
 CRED_FILE="/root/credentials-$(date +%Y%m%d-%H%M).txt"
+
+# ---- LDAP / Active Directory (optionnel) -------------------
+# Mettre LDAP_ENABLED=true et renseigner les variables pour activer
+LDAP_ENABLED="${LDAP_ENABLED:-false}"
+LDAP_HOSTNAME="${LDAP_HOSTNAME:-ldap.votre-domaine.com}"
+LDAP_PORT="${LDAP_PORT:-389}"                        # 389=LDAP, 636=LDAPS
+LDAP_ENCRYPTION_METHOD="${LDAP_ENCRYPTION_METHOD:-none}"  # none | starttls | ssl
+LDAP_USER_BASE_DN="${LDAP_USER_BASE_DN:-ou=Users,dc=domaine,dc=com}"
+LDAP_USERNAME_ATTRIBUTE="${LDAP_USERNAME_ATTRIBUTE:-sAMAccountName}"  # uid pour OpenLDAP
+LDAP_SEARCH_BIND_DN="${LDAP_SEARCH_BIND_DN:-}"       # compte de service (optionnel)
+LDAP_SEARCH_BIND_PASSWORD="${LDAP_SEARCH_BIND_PASSWORD:-}"
+LDAP_GROUP_BASE_DN="${LDAP_GROUP_BASE_DN:-}"         # ou=Groups,dc=domaine,dc=com (optionnel)
+LDAP_GROUP_SEARCH_FILTER="${LDAP_GROUP_SEARCH_FILTER:-}"
 # ------------------------------------------------------------
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
@@ -207,12 +221,43 @@ fi
 # ════════════════════════════════════════
 section "7. docker-compose.yml"
 # ════════════════════════════════════════
-python3 - "$BASE_DIR" "$DOMAIN_GUAC" "$DOMAIN_PORTAINER" <<'PYEOF'
+python3 - "$BASE_DIR" "$DOMAIN_GUAC" "$DOMAIN_PORTAINER" "$TIMEZONE" "$LDAP_ENABLED" \
+          "$LDAP_HOSTNAME" "$LDAP_PORT" "$LDAP_ENCRYPTION_METHOD" \
+          "$LDAP_USER_BASE_DN" "$LDAP_USERNAME_ATTRIBUTE" \
+          "$LDAP_SEARCH_BIND_DN" "$LDAP_SEARCH_BIND_PASSWORD" \
+          "$LDAP_GROUP_BASE_DN" "$LDAP_GROUP_SEARCH_FILTER" <<'PYEOF'
 import sys
 
-base_dir        = sys.argv[1]
-domain_guac     = sys.argv[2]
-domain_portainer = sys.argv[3]
+base_dir              = sys.argv[1]
+domain_guac           = sys.argv[2]
+domain_portainer      = sys.argv[3]
+timezone              = sys.argv[4]
+ldap_enabled          = sys.argv[5].lower() == "true"
+ldap_hostname         = sys.argv[6]
+ldap_port             = sys.argv[7]
+ldap_encryption       = sys.argv[8]
+ldap_user_base_dn     = sys.argv[9]
+ldap_username_attr    = sys.argv[10]
+ldap_search_bind_dn   = sys.argv[11]
+ldap_search_bind_pass = sys.argv[12]
+ldap_group_base_dn    = sys.argv[13]
+ldap_group_filter     = sys.argv[14]
+
+# Construire le bloc LDAP optionnel
+ldap_env = ""
+if ldap_enabled:
+    ldap_env += "      LDAP_HOSTNAME: " + ldap_hostname + "\n"
+    ldap_env += "      LDAP_PORT: \"" + ldap_port + "\"\n"
+    ldap_env += "      LDAP_ENCRYPTION_METHOD: " + ldap_encryption + "\n"
+    ldap_env += "      LDAP_USER_BASE_DN: \"" + ldap_user_base_dn + "\"\n"
+    ldap_env += "      LDAP_USERNAME_ATTRIBUTE: " + ldap_username_attr + "\n"
+    if ldap_search_bind_dn:
+        ldap_env += "      LDAP_SEARCH_BIND_DN: \"" + ldap_search_bind_dn + "\"\n"
+        ldap_env += "      LDAP_SEARCH_BIND_PASSWORD: \"" + ldap_search_bind_pass + "\"\n"
+    if ldap_group_base_dn:
+        ldap_env += "      LDAP_GROUP_BASE_DN: \"" + ldap_group_base_dn + "\"\n"
+    if ldap_group_filter:
+        ldap_env += "      LDAP_GROUP_SEARCH_FILTER: \"" + ldap_group_filter + "\"\n"
 
 compose = """networks:
   proxy:
@@ -247,7 +292,7 @@ services:
     networks:
       - proxy
     environment:
-      - TZ=Europe/Paris
+      - TZ=""" + timezone + """
 
   # ─── Portainer ──────────────────────────────────────────
   portainer:
@@ -331,8 +376,8 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       TOTP_ENABLED: "true"
-      TOTP_ISSUER: "Guacamole - selest.info"
-    labels:
+      TOTP_ISSUER: "Guacamole - """ + domain_guac + """"
+""" + ldap_env + """    labels:
       - "traefik.enable=true"
       - "traefik.http.routers.guacamole.rule=Host(`""" + domain_guac + """`)"
       - "traefik.http.routers.guacamole.entrypoints=websecure"
@@ -444,11 +489,18 @@ echo -e "  👤  Login        : à créer à la 1ère connexion"
 echo ""
 echo -e "  📋  Credentials  : ${CRED_FILE}"
 echo ""
+if [ "$LDAP_ENABLED" = "true" ]; then
+  echo -e "  🔗  LDAP         : activé → ${LDAP_HOSTNAME}:${LDAP_PORT}"
+  echo ""
+fi
 echo -e "${YELLOW}  ⚠️  Actions post-déploiement :${NC}"
 echo -e "  1. Guacamole  → changer le mot de passe admin"
 echo -e "  2. Guacamole  → configurer le TOTP (2FA)"
 echo -e "  3. Portainer  → créer le compte admin (dans les 5 min)"
 echo -e "  4. Portainer  → sélectionner 'Get Started' > 'local'"
+if [ "$LDAP_ENABLED" = "true" ]; then
+  echo -e "  5. LDAP       → tester la connexion avec un compte AD"
+fi
 echo ""
 echo -e "${BLUE}  Commandes utiles :${NC}"
 echo -e "  sudo docker compose -f ${BASE_DIR}/docker-compose.yml ps"

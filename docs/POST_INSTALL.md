@@ -2,6 +2,10 @@
 
 ## Actions à effectuer après l'installation
 
+> **Optionnel après déploiement :**
+> - Sauvegardes automatiques : `sudo bash scripts/4_backup_mysql.sh install`
+> - Intégration LDAP/AD : `sudo bash scripts/5_configure_ldap.sh`
+
 ---
 
 ## 1. Guacamole — Premier accès
@@ -50,7 +54,7 @@
 2. Créer par exemple :
    - `Administrateurs` — accès à toutes les connexions
    - `Techniciens` — accès aux connexions de leur périmètre
-   - `Selest Informatique` — groupe principal
+   - `Administrateurs IT` — groupe principal
 
 3. Assigner des connexions au groupe : onglet **Connexions** du groupe
 
@@ -85,7 +89,26 @@ for i in $(seq 1 35); do curl -sk https://guac.votre-domaine.com/guacamole/ -o /
 
 ---
 
-## 7. Configurer les alertes email (optionnel)
+## 7. Configurer les sauvegardes MySQL (optionnel)
+
+```bash
+# Installe un cron de backup quotidien à 2h30 avec 7 jours de rétention
+sudo bash scripts/4_backup_mysql.sh install
+
+# Personnalisation
+BACKUP_DIR=/var/backups/guacamole RETENTION_DAYS=14 BACKUP_TIME=03:00 \
+  sudo bash scripts/4_backup_mysql.sh install
+
+# Vérifier les backups
+sudo /usr/local/sbin/guacamole-backup list
+
+# Restaurer un backup
+sudo /usr/local/sbin/guacamole-backup restore
+```
+
+---
+
+## 8. Configurer les alertes email (optionnel)
 
 Pour recevoir des alertes si un conteneur tombe, ajouter dans le `docker-compose.yml` :
 
