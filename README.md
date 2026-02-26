@@ -79,7 +79,7 @@ Traefik v2.11 (reverse proxy + Let's Encrypt)
 
 ```bash
 # 1. Cloner le dépôt
-git clone https://github.com/YOUR_USERNAME/guacamole-stack.git
+git clone https://github.com/guacamole-traefik/guacamole-stack.git
 cd guacamole-stack
 
 # 2. Rendre les scripts exécutables
