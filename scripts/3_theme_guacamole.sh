@@ -110,8 +110,10 @@ section "3. CSS Corporate Blue"
 python3 << 'PYEOF'
 css = """/* ============================================================
    CORPORATE BLUE THEME — Apache Guacamole
-   Style : Fond clair, cartes blanches, bleu corporate,
-           animations soignées, typographie DM Sans
+   Règle de base : NE PAS toucher au layout natif de Guacamole.
+   On stylise uniquement les couleurs, bordures, ombres,
+   typographie et animations — jamais display/grid/padding
+   sur les conteneurs parents.
    ============================================================ */
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
 
@@ -323,185 +325,97 @@ html, body {
 /* ═══════════════════════════════════════════
    NAVIGATION PRINCIPALE
    ═══════════════════════════════════════════ */
-header, .app-controls, nav.client-controls {
+header, .app-controls {
   background: #fff !important;
   border-bottom: 1px solid var(--border) !important;
   box-shadow: var(--shadow-sm) !important;
 }
 
-.app-controls a, header a, nav a {
+.app-controls a, header a {
   color: var(--text-secondary) !important;
   font-weight: 500 !important;
   font-size: 14px !important;
-  text-decoration: none !important;
-  border-radius: var(--radius-sm) !important;
   transition: var(--transition) !important;
 }
 
 .app-controls a:hover, header a:hover {
   color: var(--blue-700) !important;
-  background: var(--bg-hover) !important;
 }
 
 /* ═══════════════════════════════════════════
-   GRILLE DE CONNEXIONS
+   FOND DE LA LISTE DE CONNEXIONS
+   On ne touche PAS au display/padding/grid natif
    ═══════════════════════════════════════════ */
-.connection-list-parent, .main-content, .home {
+.connection-list-parent, .main-content {
   background: var(--bg-page) !important;
-  padding: 32px !important;
-  min-height: calc(100vh - 56px) !important;
-}
-
-.connection-list {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)) !important;
-  gap: 18px !important;
-  padding: 0 !important;
 }
 
 /* ── CARTES DE CONNEXION ──────────────────── */
-.connection-list .connection,
 .connection {
   background: var(--bg-card) !important;
   border: 1px solid var(--border-card) !important;
   border-radius: var(--radius-lg) !important;
   box-shadow: var(--shadow-sm) !important;
-  padding: 0 !important;
-  cursor: pointer !important;
-  transition: var(--transition-spring) !important;
   overflow: hidden !important;
   position: relative !important;
-  display: flex !important;
-  flex-direction: column !important;
+  transition: var(--transition-spring) !important;
 }
 
-/* Bande bleue en haut */
-.connection-list .connection::before,
+/* Bande bleue en haut de chaque carte (absolute = pas d'impact layout) */
 .connection::before {
   content: '' !important;
-  display: block !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
   height: 3px !important;
   background: linear-gradient(90deg, #1d4ed8, #60a5fa) !important;
-  width: 100% !important;
-  flex-shrink: 0 !important;
+  z-index: 1 !important;
 }
 
 /* Hover : élévation + ombre bleue */
-.connection-list .connection:hover,
 .connection:hover {
   border-color: var(--blue-300) !important;
   box-shadow: var(--shadow-blue) !important;
-  transform: translateY(-5px) scale(1.015) !important;
-}
-
-/* Contenu carte */
-.connection .caption,
-.connection-list .connection .caption {
-  padding: 20px 20px 18px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 8px !important;
-}
-
-/* Icône protocole */
-.connection .caption .protocol-icon,
-.connection .protocol-icon {
-  width: 42px !important;
-  height: 42px !important;
-  background: var(--bg-hover) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius-md) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  color: var(--blue-600) !important;
-  font-size: 18px !important;
-  margin-bottom: 6px !important;
-  transition: var(--transition) !important;
-}
-
-.connection:hover .protocol-icon {
-  background: var(--bg-active) !important;
-  border-color: var(--blue-300) !important;
-  color: var(--blue-700) !important;
+  transform: translateY(-4px) !important;
 }
 
 /* Nom connexion */
-.connection .caption .name,
 .connection .name {
   color: var(--text-primary) !important;
-  font-size: 15px !important;
+  font-size: 14px !important;
   font-weight: 600 !important;
-  line-height: 1.3 !important;
-  letter-spacing: -0.1px !important;
 }
 
 /* Protocole */
-.connection .caption .protocol,
 .connection .protocol {
   color: var(--text-muted) !important;
-  font-size: 11.5px !important;
-  font-weight: 600 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.7px !important;
-}
-
-/* Badge utilisateurs actifs */
-.connection .active-users,
-.connection .users {
-  display: inline-flex !important;
-  align-items: center !important;
-  background: #dcfce7 !important;
-  color: #15803d !important;
-  border-radius: 20px !important;
   font-size: 11px !important;
   font-weight: 600 !important;
-  padding: 2px 8px !important;
-  width: fit-content !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.6px !important;
 }
 
 /* ── GROUPES ──────────────────────────────── */
-.connection-group, .connection-group-contents {
-  margin-bottom: 32px !important;
-}
-
-.connection-group > .caption,
-.connection-group > .title {
-  display: flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-  padding: 0 4px 14px !important;
-  border-bottom: 2px solid var(--border) !important;
-  color: var(--text-primary) !important;
-  font-size: 12.5px !important;
+.connection-group-label {
+  color: var(--text-secondary) !important;
+  font-size: 12px !important;
   font-weight: 700 !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.9px !important;
-  margin-bottom: 16px !important;
-}
-
-.connection-group > .caption::before,
-.connection-group > .title::before {
-  content: '▸' !important;
-  color: var(--blue-500) !important;
-  transition: var(--transition) !important;
-}
-
-.connection-group.expanded > .caption::before,
-.connection-group.expanded > .title::before {
-  content: '▾' !important;
+  letter-spacing: 0.8px !important;
+  border-bottom: 2px solid var(--border) !important;
+  padding-bottom: 8px !important;
+  margin-bottom: 12px !important;
 }
 
 /* ═══════════════════════════════════════════
    MENUS ET DROPDOWNS
    ═══════════════════════════════════════════ */
-.menu, .context-menu, .dropdown-menu, .user-menu {
+.menu, .context-menu, .dropdown-menu {
   background: var(--bg-card) !important;
   border: 1px solid var(--border) !important;
   border-radius: var(--radius-md) !important;
   box-shadow: var(--shadow-md) !important;
-  padding: 6px !important;
-  animation: menuAppear 0.18s ease-out !important;
 }
 
 @keyframes menuAppear {
@@ -511,28 +425,18 @@ header, .app-controls, nav.client-controls {
 
 .menu a, .menu button,
 .dropdown-menu a, .dropdown-menu button,
-.context-menu a, .context-menu li,
-.user-menu a, .user-menu button {
-  display: flex !important;
-  align-items: center !important;
+.context-menu a, .context-menu li {
   color: var(--text-secondary) !important;
   font-size: 14px !important;
   font-weight: 500 !important;
-  padding: 9px 12px !important;
   border-radius: var(--radius-sm) !important;
   text-decoration: none !important;
   transition: var(--transition) !important;
-  background: none !important;
-  border: none !important;
-  width: 100% !important;
-  text-align: left !important;
-  cursor: pointer !important;
 }
 
 .menu a:hover, .menu button:hover,
 .dropdown-menu a:hover, .dropdown-menu button:hover,
-.context-menu li:hover,
-.user-menu a:hover, .user-menu button:hover {
+.context-menu li:hover {
   background: var(--bg-hover) !important;
   color: var(--blue-700) !important;
 }
@@ -540,45 +444,36 @@ header, .app-controls, nav.client-controls {
 .menu hr, .dropdown-menu hr {
   border: none !important;
   border-top: 1px solid var(--border) !important;
-  margin: 4px 0 !important;
 }
 
 /* ═══════════════════════════════════════════
    BOUTONS GÉNÉRAUX
    ═══════════════════════════════════════════ */
-input[type="submit"], button, a.button {
+button, input[type="submit"] {
   font-family: inherit !important;
   font-size: 14px !important;
   font-weight: 600 !important;
   border-radius: var(--radius-md) !important;
-  padding: 9px 18px !important;
   cursor: pointer !important;
   transition: var(--transition) !important;
-  border: none !important;
   background: var(--blue-600) !important;
   color: #fff !important;
-  box-shadow: 0 1px 3px rgba(37,99,235,0.2) !important;
+  border: none !important;
 }
 
-input[type="submit"]:hover, button:hover, a.button:hover {
+button:hover, input[type="submit"]:hover {
   background: var(--blue-700) !important;
-  box-shadow: 0 3px 10px rgba(37,99,235,0.3) !important;
-  transform: translateY(-1px) !important;
 }
 
-button.cancel, a.cancel, .button.cancel {
+button.cancel, a.cancel {
   background: var(--bg-input) !important;
   color: var(--text-secondary) !important;
   border: 1px solid var(--border) !important;
-  box-shadow: none !important;
 }
 
-button.cancel:hover { background: var(--border) !important; transform: none !important; }
-
-button.danger, button.delete, a.delete {
+button.danger, button.delete {
   background: #ef4444 !important;
 }
-
 button.danger:hover, button.delete:hover {
   background: #dc2626 !important;
 }
@@ -586,38 +481,25 @@ button.danger:hover, button.delete:hover {
 /* ═══════════════════════════════════════════
    FORMULAIRES
    ═══════════════════════════════════════════ */
-.form-field, .field { margin-bottom: 20px !important; }
-
-.form-field label, .field label {
-  display: block !important;
-  color: var(--text-secondary) !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  margin-bottom: 6px !important;
-}
-
 .form-field input[type="text"],
 .form-field input[type="password"],
 .form-field input[type="email"],
 .form-field input[type="number"],
-.form-field select, .form-field textarea,
-input[type="text"], input[type="password"],
-input[type="email"], input[type="number"],
-select, textarea {
+.form-field select,
+.form-field textarea {
   background: var(--bg-input) !important;
   border: 1.5px solid var(--border) !important;
   border-radius: var(--radius-md) !important;
   color: var(--text-primary) !important;
   font-family: inherit !important;
-  font-size: 14.5px !important;
-  padding: 10px 14px !important;
-  width: 100% !important;
+  font-size: 14px !important;
   transition: var(--transition) !important;
   outline: none !important;
 }
 
-.form-field input:focus, .form-field select:focus,
-.form-field textarea:focus, input:focus, select:focus, textarea:focus {
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
   border-color: var(--blue-500) !important;
   background: #fff !important;
   box-shadow: 0 0 0 3px rgba(59,130,246,0.12) !important;
@@ -702,25 +584,21 @@ table tbody tr:hover { background: var(--bg-hover) !important; }
 /* ═══════════════════════════════════════════
    BARRE LATÉRALE ADMIN
    ═══════════════════════════════════════════ */
-.settings-menu, aside {
+.settings-menu {
   background: var(--bg-card) !important;
   border-right: 1px solid var(--border) !important;
 }
 
-.settings-menu a, aside a {
+.settings-menu a {
   color: var(--text-secondary) !important;
   font-size: 14px !important;
   font-weight: 500 !important;
-  padding: 9px 16px !important;
   border-radius: var(--radius-sm) !important;
-  display: flex !important;
-  align-items: center !important;
   text-decoration: none !important;
   transition: var(--transition) !important;
-  margin: 2px 8px !important;
 }
 
-.settings-menu a:hover, aside a:hover {
+.settings-menu a:hover {
   background: var(--bg-hover) !important;
   color: var(--blue-700) !important;
 }
