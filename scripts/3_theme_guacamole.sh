@@ -2,25 +2,20 @@
 set -euo pipefail
 
 # ============================================================
-#  THEME GUACAMOLE — Extension thème sombre personnalisé
+#  THEME GUACAMOLE — Corporate Blue Edition
 #  Usage : sudo bash 3_theme_guacamole.sh
-#  Installe un thème sombre moderne avec logo personnalisé
+#  Style : Bleu corporate professionnel, cartes redessinées,
+#          animations fluides, typographie soignée (DM Sans)
 # ============================================================
 
-# ---- CONFIG (à adapter avant de lancer) --------------------
-COMPANY_NAME="${COMPANY_NAME:-Accès Distant}"
+# ---- CONFIG (personnalisable via variables d'env) ----------
+COMPANY_NAME="${COMPANY_NAME:-Selest Informatique}"
 COMPANY_SUBTITLE="${COMPANY_SUBTITLE:-Accès distant sécurisé}"
-PRIMARY_COLOR="${PRIMARY_COLOR:-#2563eb}"    # Bleu principal
-ACCENT_COLOR="${ACCENT_COLOR:-#3b82f6}"     # Bleu accent
-DARK_BG="${DARK_BG:-#0f172a}"              # Fond sombre
-CARD_BG="${CARD_BG:-#1e293b}"             # Fond carte
-TEXT_COLOR="${TEXT_COLOR:-#f1f5f9}"        # Texte clair
-GUAC_EXTENSIONS_DIR="/opt/guacamole-home/extensions"
+PRIMARY_COLOR="${PRIMARY_COLOR:-#1d4ed8}"
+ACCENT_COLOR="${ACCENT_COLOR:-#3b82f6}"
 THEME_BUILD_DIR="/tmp/guac-theme-build"
-THEME_JAR="custom-theme.jar"
-THEME_NAMESPACE="custom-theme"
-FOOTER_TEXT="${FOOTER_TEXT:-Accès sécurisé}"
-FOOTER_YEAR="${FOOTER_YEAR:-$(date +%Y)}"
+THEME_JAR="corporate-theme.jar"
+EXTENSIONS_DIR="/opt/guacamole-extensions"
 # ------------------------------------------------------------
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
@@ -50,20 +45,16 @@ echo ""
 echo -e "${BLUE}  ── Identité ─────────────────────────────────────────────${NC}"
 ask "Nom affiché sur le logo"       "$COMPANY_NAME"     COMPANY_NAME
 ask "Sous-titre du logo"            "$COMPANY_SUBTITLE" COMPANY_SUBTITLE
-ask "Texte du pied de page"         "$FOOTER_TEXT"      FOOTER_TEXT
 
 echo ""
-echo -e "${BLUE}  ── Couleurs (format hex ex: #2563eb) ───────────────────${NC}"
+echo -e "${BLUE}  ── Couleurs du logo (format hex ex: #1d4ed8) ───────────${NC}"
 ask "Couleur principale"            "$PRIMARY_COLOR"    PRIMARY_COLOR
 ask "Couleur accent"                "$ACCENT_COLOR"     ACCENT_COLOR
-ask "Couleur fond sombre"           "$DARK_BG"          DARK_BG
-ask "Couleur fond carte"            "$CARD_BG"          CARD_BG
 
 echo ""
 echo -e "${BLUE}  ── Récapitulatif ──────────────────────────────────────${NC}"
 echo -e "  Nom              : ${GREEN}${COMPANY_NAME}${NC}"
 echo -e "  Sous-titre       : ${GREEN}${COMPANY_SUBTITLE}${NC}"
-echo -e "  Pied de page     : ${GREEN}${FOOTER_TEXT}${NC}"
 echo -e "  Couleur principale : ${GREEN}${PRIMARY_COLOR}${NC}"
 echo -e "  Couleur accent   : ${GREEN}${ACCENT_COLOR}${NC}"
 echo -e "${BLUE}  ────────────────────────────────────────────────────────${NC}"
@@ -73,575 +64,779 @@ read -r _confirm </dev/tty
 [[ "${_confirm,,}" =~ ^(n|non|no)$ ]] && { echo "Annulé."; exit 0; }
 
 # ════════════════════════════════════════
-section "1. Préparation des répertoires"
+section "1. Préparation"
 # ════════════════════════════════════════
 rm -rf "$THEME_BUILD_DIR"
 mkdir -p "$THEME_BUILD_DIR/images"
-mkdir -p "$GUAC_EXTENSIONS_DIR"
+mkdir -p "$EXTENSIONS_DIR"
 log "Répertoires créés"
 
 # ════════════════════════════════════════
-section "2. Génération du logo SVG"
+section "2. Logo SVG corporate"
 # ════════════════════════════════════════
 cat > "$THEME_BUILD_DIR/images/logo.svg" <<LOGOSVG
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" height="80">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 72" width="340" height="72">
   <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:${PRIMARY_COLOR};stop-opacity:1" />
-      <stop offset="100%" style="stop-color:${ACCENT_COLOR};stop-opacity:1" />
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="${PRIMARY_COLOR}"/>
+      <stop offset="100%" stop-color="${ACCENT_COLOR}"/>
     </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="${PRIMARY_COLOR}" flood-opacity="0.3"/>
+    </filter>
   </defs>
-  <!-- Icône réseau/écran -->
-  <rect x="8" y="12" width="44" height="32" rx="4" fill="url(#grad)"/>
-  <rect x="24" y="44" width="12" height="8" fill="url(#grad)"/>
-  <rect x="18" y="52" width="24" height="4" rx="2" fill="url(#grad)"/>
-  <!-- Petits écrans/serveurs -->
-  <rect x="14" y="18" width="32" height="20" rx="2" fill="${DARK_BG}" opacity="0.6"/>
-  <rect x="17" y="21" width="10" height="6" rx="1" fill="${ACCENT_COLOR}" opacity="0.8"/>
-  <rect x="29" y="21" width="10" height="6" rx="1" fill="${PRIMARY_COLOR}" opacity="0.8"/>
-  <rect x="17" y="29" width="22" height="3" rx="1" fill="${TEXT_COLOR}" opacity="0.3"/>
-  <!-- Texte -->
-  <text x="64" y="34" font-family="'Segoe UI', Arial, sans-serif" font-size="22" font-weight="700" fill="${TEXT_COLOR}">${COMPANY_NAME}</text>
-  <text x="65" y="54" font-family="'Segoe UI', Arial, sans-serif" font-size="13" fill="${ACCENT_COLOR}" opacity="0.9">${COMPANY_SUBTITLE}</text>
+  <rect x="4" y="8" width="52" height="36" rx="6" fill="url(#g1)" filter="url(#shadow)"/>
+  <rect x="10" y="14" width="40" height="24" rx="3" fill="rgba(255,255,255,0.12)"/>
+  <rect x="14" y="19" width="18" height="2.5" rx="1.2" fill="rgba(255,255,255,0.7)"/>
+  <rect x="14" y="24" width="28" height="2.5" rx="1.2" fill="rgba(255,255,255,0.45)"/>
+  <rect x="14" y="29" width="22" height="2.5" rx="1.2" fill="rgba(255,255,255,0.45)"/>
+  <rect x="24" y="44" width="12" height="7" fill="url(#g1)"/>
+  <rect x="18" y="51" width="24" height="3.5" rx="1.5" fill="url(#g1)"/>
+  <text x="68" y="30" font-family="'Segoe UI', 'Helvetica Neue', sans-serif"
+        font-size="22" font-weight="700" letter-spacing="-0.3"
+        fill="#0f172a">${COMPANY_NAME}</text>
+  <rect x="68" y="36" width="200" height="1.5" rx="1" fill="${PRIMARY_COLOR}" opacity="0.25"/>
+  <text x="69" y="52" font-family="'Segoe UI', 'Helvetica Neue', sans-serif"
+        font-size="12.5" font-weight="500" letter-spacing="0.8"
+        fill="${ACCENT_COLOR}">${COMPANY_SUBTITLE}</text>
 </svg>
 LOGOSVG
-
-# Convertir SVG en PNG via Python (sans dépendances externes)
-python3 << PYEOF
-# On encode le SVG en base64 pour l'utiliser directement
-import base64, os
-
-with open("${THEME_BUILD_DIR}/images/logo.svg", "rb") as f:
-    svg_data = f.read()
-
-# Créer un PNG minimal via header PNG (fallback)
-# On garde le SVG et on crée aussi une version PNG via rsvg si disponible
-import subprocess
-try:
-    result = subprocess.run(
-        ["rsvg-convert", "-w", "320", "-h", "80",
-         "${THEME_BUILD_DIR}/images/logo.svg",
-         "-o", "${THEME_BUILD_DIR}/images/logo.png"],
-        capture_output=True
-    )
-    if result.returncode == 0:
-        print("PNG généré via rsvg-convert")
-    else:
-        raise Exception("rsvg failed")
-except:
-    try:
-        result = subprocess.run(
-            ["convert", "${THEME_BUILD_DIR}/images/logo.svg",
-             "${THEME_BUILD_DIR}/images/logo.png"],
-            capture_output=True
-        )
-        if result.returncode == 0:
-            print("PNG généré via ImageMagick")
-        else:
-            raise Exception("convert failed")
-    except:
-        # Copier le SVG comme fallback — Guacamole accepte les SVG comme ressource
-        import shutil
-        shutil.copy("${THEME_BUILD_DIR}/images/logo.svg",
-                    "${THEME_BUILD_DIR}/images/logo.png")
-        print("Fallback: SVG utilisé comme logo")
-PYEOF
-
-log "Logo généré"
+log "Logo SVG généré"
 
 # ════════════════════════════════════════
-section "3. Fichier CSS du thème"
+section "3. CSS Corporate Blue"
 # ════════════════════════════════════════
-cat > "$THEME_BUILD_DIR/theme.css" <<'THEMECSS'
-/* ============================================================
-   Thème Guacamole sombre moderne — personnalisable
+# Écrire le CSS via Python pour éviter les problèmes d'interpolation shell
+python3 << 'PYEOF'
+css = """/* ============================================================
+   CORPORATE BLUE THEME — Apache Guacamole
+   Style : Fond clair, cartes blanches, bleu corporate,
+           animations soignées, typographie DM Sans
    ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
 
-/* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-/* ── Variables globales ── */
+/* ── Variables ──────────────────────────────────────────── */
 :root {
-  --primary:    #2563eb;
-  --accent:     #3b82f6;
-  --primary-hover: #1d4ed8;
-  --dark-bg:    #0f172a;
-  --card-bg:    #1e293b;
-  --card-border:#334155;
-  --text:       #f1f5f9;
-  --text-muted: #94a3b8;
-  --input-bg:   #0f172a;
-  --success:    #10b981;
-  --danger:     #ef4444;
-  --radius:     12px;
-  --shadow:     0 25px 60px rgba(0,0,0,0.5);
-  --transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+  --blue-950:   #172554;
+  --blue-900:   #1e3a8a;
+  --blue-800:   #1e40af;
+  --blue-700:   #1d4ed8;
+  --blue-600:   #2563eb;
+  --blue-500:   #3b82f6;
+  --blue-400:   #60a5fa;
+  --blue-300:   #93c5fd;
+  --blue-100:   #dbeafe;
+  --blue-50:    #eff6ff;
+
+  --bg-page:    #f0f4f8;
+  --bg-card:    #ffffff;
+  --bg-input:   #f8fafc;
+  --bg-hover:   #f0f7ff;
+  --bg-active:  #dbeafe;
+  --border:      #e2e8f0;
+  --border-card: #e8edf5;
+  --text-primary:   #0f172a;
+  --text-secondary: #475569;
+  --text-muted:     #94a3b8;
+
+  --shadow-sm:  0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+  --shadow-md:  0 4px 16px rgba(15,23,42,0.08), 0 2px 6px rgba(15,23,42,0.05);
+  --shadow-lg:  0 12px 40px rgba(15,23,42,0.12), 0 4px 12px rgba(15,23,42,0.06);
+  --shadow-blue: 0 8px 32px rgba(37,99,235,0.18), 0 2px 8px rgba(37,99,235,0.1);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* ── Reset & base ── */
-*, *::before, *::after { box-sizing: border-box; }
+/* ── Base ───────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; }
 
-body, html {
-  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
-  background-color: var(--dark-bg) !important;
-  color: var(--text) !important;
-  margin: 0;
-  min-height: 100vh;
+html, body {
+  font-family: 'DM Sans', 'Segoe UI', system-ui, sans-serif !important;
+  background: var(--bg-page) !important;
+  color: var(--text-primary) !important;
+  font-size: 15px !important;
+  line-height: 1.6 !important;
+  -webkit-font-smoothing: antialiased !important;
 }
 
-/* ── Page de login ── */
+/* ═══════════════════════════════════════════
+   PAGE DE LOGIN
+   ═══════════════════════════════════════════ */
 .login-ui {
-  background: var(--dark-bg) !important;
-  background-image:
-    radial-gradient(ellipse 80% 60% at 50% -20%, rgba(37,99,235,0.25) 0%, transparent 70%),
-    radial-gradient(ellipse 60% 40% at 90% 90%, rgba(59,130,246,0.12) 0%, transparent 60%) !important;
   min-height: 100vh !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  background: linear-gradient(145deg, #eff6ff 0%, #f0f4f8 50%, #e8f0fe 100%) !important;
+  position: relative !important;
+  overflow: hidden !important;
 }
 
+/* Fond géométrique décoratif */
+.login-ui::before {
+  content: '' !important;
+  position: fixed !important;
+  inset: 0 !important;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(37,99,235,0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(29,78,216,0.06) 0%, transparent 50%) !important;
+  pointer-events: none !important;
+}
+
+.login-ui::after {
+  content: '' !important;
+  position: fixed !important;
+  inset: 0 !important;
+  background-image:
+    linear-gradient(rgba(37,99,235,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37,99,235,0.025) 1px, transparent 1px) !important;
+  background-size: 48px 48px !important;
+  pointer-events: none !important;
+}
+
+/* Carte de login */
 .login-ui .login-dialog {
-  background: var(--card-bg) !important;
-  border: 1px solid var(--card-border) !important;
-  border-radius: var(--radius) !important;
-  box-shadow: var(--shadow) !important;
-  padding: 40px !important;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-card) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-lg) !important;
+  padding: 48px 44px !important;
   width: 100% !important;
   max-width: 420px !important;
-  backdrop-filter: blur(20px) !important;
-  animation: slideUp 0.4s cubic-bezier(0.4,0,0.2,1) !important;
+  position: relative !important;
+  z-index: 1 !important;
+  animation: loginAppear 0.5s cubic-bezier(0.34, 1.2, 0.64, 1) !important;
 }
 
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(24px); }
-  to   { opacity: 1; transform: translateY(0); }
+/* Bande bleue décorative */
+.login-ui .login-dialog::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important; left: 0 !important; right: 0 !important;
+  height: 4px !important;
+  background: linear-gradient(90deg, #1d4ed8, #60a5fa) !important;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0 !important;
 }
 
-/* ── Logo ── */
+@keyframes loginAppear {
+  from { opacity: 0; transform: translateY(28px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Logo */
 .login-ui .login-dialog .logo {
-  width: 240px !important;
-  height: 60px !important;
+  width: 260px !important;
+  height: 64px !important;
   background-size: contain !important;
   background-repeat: no-repeat !important;
-  background-position: center !important;
-  margin: 0 auto 32px !important;
+  background-position: left center !important;
+  margin: 0 auto 36px !important;
   display: block !important;
 }
 
-/* ── Titres ── */
-.login-ui h1, .login-ui h2 {
-  color: var(--text) !important;
-  font-weight: 600 !important;
-  text-align: center !important;
-  margin-bottom: 24px !important;
-}
-
-/* ── Champs de saisie ── */
+/* Champs de saisie */
 .login-ui .login-fields .labeled-field {
-  margin-bottom: 16px !important;
+  margin-bottom: 18px !important;
   position: relative !important;
 }
 
 .login-ui .login-fields .labeled-field input,
 .login-ui .login-fields .labeled-field input[type="text"],
 .login-ui .login-fields .labeled-field input[type="password"] {
-  background: var(--input-bg) !important;
-  border: 1.5px solid var(--card-border) !important;
-  border-radius: 8px !important;
-  color: var(--text) !important;
+  background: var(--bg-input) !important;
+  border: 1.5px solid var(--border) !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--text-primary) !important;
   font-family: inherit !important;
   font-size: 15px !important;
-  padding: 12px 16px !important;
+  padding: 13px 16px !important;
   width: 100% !important;
   transition: var(--transition) !important;
   outline: none !important;
 }
 
 .login-ui .login-fields .labeled-field input:focus {
-  border-color: var(--accent) !important;
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.15) !important;
+  border-color: var(--blue-500) !important;
+  background: #fff !important;
+  box-shadow: 0 0 0 4px rgba(59,130,246,0.12) !important;
 }
 
 .login-ui .login-fields .labeled-field.empty input {
-  background: var(--input-bg) !important;
   color: var(--text-muted) !important;
 }
 
-/* Placeholder label */
 .login-ui .login-fields .labeled-field .placeholder {
   color: var(--text-muted) !important;
   font-size: 14px !important;
+  padding: 13px 16px !important;
   pointer-events: none !important;
-  padding: 12px 16px !important;
 }
 
-/* ── Bouton de connexion ── */
+/* Bouton connexion */
 .login-ui input[type="submit"],
 .login-ui button[type="submit"],
 .login-ui button.login {
-  background: linear-gradient(135deg, var(--primary), var(--accent)) !important;
+  background: linear-gradient(135deg, var(--blue-700) 0%, var(--blue-600) 100%) !important;
   border: none !important;
-  border-radius: 8px !important;
-  color: #ffffff !important;
+  border-radius: var(--radius-md) !important;
+  color: #fff !important;
   cursor: pointer !important;
   font-family: inherit !important;
   font-size: 15px !important;
   font-weight: 600 !important;
-  letter-spacing: 0.3px !important;
-  padding: 13px 24px !important;
+  letter-spacing: 0.2px !important;
+  padding: 14px !important;
   width: 100% !important;
-  margin-top: 8px !important;
+  margin-top: 10px !important;
+  box-shadow: 0 4px 14px rgba(29,78,216,0.3) !important;
   transition: var(--transition) !important;
-  position: relative !important;
-  overflow: hidden !important;
 }
 
 .login-ui input[type="submit"]:hover,
-.login-ui button[type="submit"]:hover,
-.login-ui button.login:hover {
-  background: linear-gradient(135deg, var(--primary-hover), var(--primary)) !important;
-  box-shadow: 0 8px 24px rgba(37,99,235,0.4) !important;
+.login-ui button[type="submit"]:hover {
+  background: linear-gradient(135deg, var(--blue-800) 0%, var(--blue-700) 100%) !important;
+  box-shadow: 0 6px 20px rgba(29,78,216,0.4) !important;
   transform: translateY(-1px) !important;
 }
 
-.login-ui input[type="submit"]:active,
-.login-ui button[type="submit"]:active {
+.login-ui input[type="submit"]:active {
   transform: translateY(0) !important;
 }
 
-/* ── Messages d'erreur ── */
-.login-ui .login-fields .error {
-  color: var(--danger) !important;
-  font-size: 13px !important;
+/* Erreur */
+.login-ui .error {
+  background: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  border-left: 3px solid #ef4444 !important;
+  border-radius: var(--radius-sm) !important;
+  color: #dc2626 !important;
+  font-size: 13.5px !important;
+  padding: 10px 14px !important;
   margin-top: 8px !important;
-  padding: 8px 12px !important;
-  background: rgba(239,68,68,0.1) !important;
-  border-radius: 6px !important;
-  border-left: 3px solid var(--danger) !important;
 }
 
-/* ── Interface principale (après login) ── */
-
-/* Barre de navigation */
-.app-controls, header.header {
-  background: var(--card-bg) !important;
-  border-bottom: 1px solid var(--card-border) !important;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.3) !important;
+/* ═══════════════════════════════════════════
+   NAVIGATION PRINCIPALE
+   ═══════════════════════════════════════════ */
+header, .app-controls, nav.client-controls {
+  background: #fff !important;
+  border-bottom: 1px solid var(--border) !important;
+  box-shadow: var(--shadow-sm) !important;
 }
 
-/* Fond principal */
-.main-content, .connection-list-parent, .user-menu {
-  background: var(--dark-bg) !important;
-}
-
-/* Cartes de connexion */
-.connection-list .connection,
-.connection-group,
-.connection-group-contents .connection {
-  background: var(--card-bg) !important;
-  border: 1px solid var(--card-border) !important;
-  border-radius: 10px !important;
-  color: var(--text) !important;
-  transition: var(--transition) !important;
-  margin: 6px !important;
-}
-
-.connection-list .connection:hover,
-.connection-group:hover {
-  border-color: var(--accent) !important;
-  box-shadow: 0 4px 20px rgba(59,130,246,0.2) !important;
-  transform: translateY(-2px) !important;
-}
-
-/* Icônes de connexion */
-.connection .caption .protocol-icon {
-  color: var(--accent) !important;
-}
-
-/* Nom des connexions */
-.connection .caption .name {
-  color: var(--text) !important;
+.app-controls a, header a, nav a {
+  color: var(--text-secondary) !important;
   font-weight: 500 !important;
+  font-size: 14px !important;
+  text-decoration: none !important;
+  border-radius: var(--radius-sm) !important;
+  transition: var(--transition) !important;
 }
 
-/* Menus et dropdowns */
-.menu, .dropdown-menu, .context-menu {
-  background: var(--card-bg) !important;
-  border: 1px solid var(--card-border) !important;
-  border-radius: 8px !important;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important;
+.app-controls a:hover, header a:hover {
+  color: var(--blue-700) !important;
+  background: var(--bg-hover) !important;
+}
+
+/* ═══════════════════════════════════════════
+   GRILLE DE CONNEXIONS
+   ═══════════════════════════════════════════ */
+.connection-list-parent, .main-content, .home {
+  background: var(--bg-page) !important;
+  padding: 32px !important;
+  min-height: calc(100vh - 56px) !important;
+}
+
+.connection-list {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)) !important;
+  gap: 18px !important;
+  padding: 0 !important;
+}
+
+/* ── CARTES DE CONNEXION ──────────────────── */
+.connection-list .connection,
+.connection {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-card) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-sm) !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+  transition: var(--transition-spring) !important;
+  overflow: hidden !important;
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Bande bleue en haut */
+.connection-list .connection::before,
+.connection::before {
+  content: '' !important;
+  display: block !important;
+  height: 3px !important;
+  background: linear-gradient(90deg, #1d4ed8, #60a5fa) !important;
+  width: 100% !important;
+  flex-shrink: 0 !important;
+}
+
+/* Hover : élévation + ombre bleue */
+.connection-list .connection:hover,
+.connection:hover {
+  border-color: var(--blue-300) !important;
+  box-shadow: var(--shadow-blue) !important;
+  transform: translateY(-5px) scale(1.015) !important;
+}
+
+/* Contenu carte */
+.connection .caption,
+.connection-list .connection .caption {
+  padding: 20px 20px 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+/* Icône protocole */
+.connection .caption .protocol-icon,
+.connection .protocol-icon {
+  width: 42px !important;
+  height: 42px !important;
+  background: var(--bg-hover) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-md) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--blue-600) !important;
+  font-size: 18px !important;
+  margin-bottom: 6px !important;
+  transition: var(--transition) !important;
+}
+
+.connection:hover .protocol-icon {
+  background: var(--bg-active) !important;
+  border-color: var(--blue-300) !important;
+  color: var(--blue-700) !important;
+}
+
+/* Nom connexion */
+.connection .caption .name,
+.connection .name {
+  color: var(--text-primary) !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  letter-spacing: -0.1px !important;
+}
+
+/* Protocole */
+.connection .caption .protocol,
+.connection .protocol {
+  color: var(--text-muted) !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.7px !important;
+}
+
+/* Badge utilisateurs actifs */
+.connection .active-users,
+.connection .users {
+  display: inline-flex !important;
+  align-items: center !important;
+  background: #dcfce7 !important;
+  color: #15803d !important;
+  border-radius: 20px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 2px 8px !important;
+  width: fit-content !important;
+}
+
+/* ── GROUPES ──────────────────────────────── */
+.connection-group, .connection-group-contents {
+  margin-bottom: 32px !important;
+}
+
+.connection-group > .caption,
+.connection-group > .title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 0 4px 14px !important;
+  border-bottom: 2px solid var(--border) !important;
+  color: var(--text-primary) !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.9px !important;
+  margin-bottom: 16px !important;
+}
+
+.connection-group > .caption::before,
+.connection-group > .title::before {
+  content: '▸' !important;
+  color: var(--blue-500) !important;
+  transition: var(--transition) !important;
+}
+
+.connection-group.expanded > .caption::before,
+.connection-group.expanded > .title::before {
+  content: '▾' !important;
+}
+
+/* ═══════════════════════════════════════════
+   MENUS ET DROPDOWNS
+   ═══════════════════════════════════════════ */
+.menu, .context-menu, .dropdown-menu, .user-menu {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-md) !important;
+  padding: 6px !important;
+  animation: menuAppear 0.18s ease-out !important;
+}
+
+@keyframes menuAppear {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .menu a, .menu button,
-.dropdown-menu a, .dropdown-menu button {
-  color: var(--text) !important;
+.dropdown-menu a, .dropdown-menu button,
+.context-menu a, .context-menu li,
+.user-menu a, .user-menu button {
+  display: flex !important;
+  align-items: center !important;
+  color: var(--text-secondary) !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  padding: 9px 12px !important;
+  border-radius: var(--radius-sm) !important;
+  text-decoration: none !important;
   transition: var(--transition) !important;
-}
-
-.menu a:hover, .menu button:hover {
-  background: rgba(59,130,246,0.15) !important;
-  color: var(--accent) !important;
-}
-
-/* Boutons généraux */
-input[type="submit"], button, a.button {
-  background: var(--primary) !important;
+  background: none !important;
   border: none !important;
-  border-radius: 6px !important;
-  color: #ffffff !important;
+  width: 100% !important;
+  text-align: left !important;
   cursor: pointer !important;
+}
+
+.menu a:hover, .menu button:hover,
+.dropdown-menu a:hover, .dropdown-menu button:hover,
+.context-menu li:hover,
+.user-menu a:hover, .user-menu button:hover {
+  background: var(--bg-hover) !important;
+  color: var(--blue-700) !important;
+}
+
+.menu hr, .dropdown-menu hr {
+  border: none !important;
+  border-top: 1px solid var(--border) !important;
+  margin: 4px 0 !important;
+}
+
+/* ═══════════════════════════════════════════
+   BOUTONS GÉNÉRAUX
+   ═══════════════════════════════════════════ */
+input[type="submit"], button, a.button {
   font-family: inherit !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  border-radius: var(--radius-md) !important;
+  padding: 9px 18px !important;
+  cursor: pointer !important;
   transition: var(--transition) !important;
+  border: none !important;
+  background: var(--blue-600) !important;
+  color: #fff !important;
+  box-shadow: 0 1px 3px rgba(37,99,235,0.2) !important;
 }
 
 input[type="submit"]:hover, button:hover, a.button:hover {
-  background: var(--primary-hover) !important;
+  background: var(--blue-700) !important;
+  box-shadow: 0 3px 10px rgba(37,99,235,0.3) !important;
+  transform: translateY(-1px) !important;
 }
 
-/* Boutons secondaires / cancel */
 button.cancel, a.cancel, .button.cancel {
-  background: var(--card-border) !important;
-  color: var(--text-muted) !important;
+  background: var(--bg-input) !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: none !important;
 }
 
-button.cancel:hover {
-  background: #475569 !important;
-  color: var(--text) !important;
+button.cancel:hover { background: var(--border) !important; transform: none !important; }
+
+button.danger, button.delete, a.delete {
+  background: #ef4444 !important;
 }
 
-/* Tableaux */
-table {
-  color: var(--text) !important;
+button.danger:hover, button.delete:hover {
+  background: #dc2626 !important;
 }
 
-table th {
-  background: var(--card-bg) !important;
-  color: var(--text-muted) !important;
-  font-weight: 500 !important;
-  font-size: 12px !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
-  border-bottom: 1px solid var(--card-border) !important;
+/* ═══════════════════════════════════════════
+   FORMULAIRES
+   ═══════════════════════════════════════════ */
+.form-field, .field { margin-bottom: 20px !important; }
+
+.form-field label, .field label {
+  display: block !important;
+  color: var(--text-secondary) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  margin-bottom: 6px !important;
 }
 
-table tr:hover {
-  background: rgba(59,130,246,0.05) !important;
-}
-
-table td {
-  border-bottom: 1px solid rgba(51,65,85,0.5) !important;
-  color: var(--text) !important;
-}
-
-/* Formulaires admin */
 .form-field input[type="text"],
 .form-field input[type="password"],
 .form-field input[type="email"],
 .form-field input[type="number"],
-.form-field select,
-.form-field textarea {
-  background: var(--input-bg) !important;
-  border: 1.5px solid var(--card-border) !important;
-  border-radius: 6px !important;
-  color: var(--text) !important;
+.form-field select, .form-field textarea,
+input[type="text"], input[type="password"],
+input[type="email"], input[type="number"],
+select, textarea {
+  background: var(--bg-input) !important;
+  border: 1.5px solid var(--border) !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--text-primary) !important;
   font-family: inherit !important;
-  padding: 8px 12px !important;
+  font-size: 14.5px !important;
+  padding: 10px 14px !important;
+  width: 100% !important;
   transition: var(--transition) !important;
-}
-
-.form-field input:focus,
-.form-field select:focus,
-.form-field textarea:focus {
-  border-color: var(--accent) !important;
   outline: none !important;
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.15) !important;
 }
 
-/* Scrollbars */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--dark-bg); }
-::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--accent); }
-
-/* Sélection */
-::selection {
-  background: rgba(59,130,246,0.3);
-  color: var(--text);
+.form-field input:focus, .form-field select:focus,
+.form-field textarea:focus, input:focus, select:focus, textarea:focus {
+  border-color: var(--blue-500) !important;
+  background: #fff !important;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.12) !important;
 }
 
-/* ── Indicateur de chargement ── */
-.loading-text {
+/* ═══════════════════════════════════════════
+   TABLEAUX
+   ═══════════════════════════════════════════ */
+table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  background: var(--bg-card) !important;
+  border-radius: var(--radius-lg) !important;
+  overflow: hidden !important;
+  box-shadow: var(--shadow-sm) !important;
+  border: 1px solid var(--border-card) !important;
+}
+
+table thead tr { background: var(--bg-page) !important; }
+
+table th {
   color: var(--text-muted) !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.7px !important;
+  padding: 12px 16px !important;
+  text-align: left !important;
+  border-bottom: 1px solid var(--border) !important;
 }
 
-/* ── Guacamole client toolbar ── */
-.client .notification {
-  background: var(--card-bg) !important;
-  border: 1px solid var(--card-border) !important;
-  color: var(--text) !important;
-  border-radius: 8px !important;
+table td {
+  color: var(--text-primary) !important;
+  font-size: 14px !important;
+  padding: 13px 16px !important;
+  border-bottom: 1px solid rgba(226,232,240,0.6) !important;
 }
 
-THEMECSS
+table tr:last-child td { border-bottom: none !important; }
+table tbody tr { transition: var(--transition) !important; }
+table tbody tr:hover { background: var(--bg-hover) !important; }
 
-log "CSS du thème créé"
+/* ═══════════════════════════════════════════
+   NOTIFICATIONS ET MODALES
+   ═══════════════════════════════════════════ */
+.notification, .alert {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-md) !important;
+  padding: 18px 22px !important;
+  animation: slideInRight 0.3s cubic-bezier(0.34, 1.2, 0.64, 1) !important;
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.notification.error   { border-left: 4px solid #ef4444 !important; background: #fef2f2 !important; }
+.notification.success { border-left: 4px solid #10b981 !important; background: #f0fdf4 !important; }
+.notification.info    { border-left: 4px solid var(--blue-500) !important; background: var(--blue-50) !important; }
+
+.dialog, .modal {
+  background: var(--bg-card) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-lg) !important;
+  border: 1px solid var(--border) !important;
+  animation: modalAppear 0.3s cubic-bezier(0.34, 1.1, 0.64, 1) !important;
+}
+
+@keyframes modalAppear {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.overlay, .modal-backdrop {
+  background: rgba(15, 23, 42, 0.35) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+/* ═══════════════════════════════════════════
+   BARRE LATÉRALE ADMIN
+   ═══════════════════════════════════════════ */
+.settings-menu, aside {
+  background: var(--bg-card) !important;
+  border-right: 1px solid var(--border) !important;
+}
+
+.settings-menu a, aside a {
+  color: var(--text-secondary) !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  padding: 9px 16px !important;
+  border-radius: var(--radius-sm) !important;
+  display: flex !important;
+  align-items: center !important;
+  text-decoration: none !important;
+  transition: var(--transition) !important;
+  margin: 2px 8px !important;
+}
+
+.settings-menu a:hover, aside a:hover {
+  background: var(--bg-hover) !important;
+  color: var(--blue-700) !important;
+}
+
+.settings-menu a.active {
+  background: var(--bg-active) !important;
+  color: var(--blue-700) !important;
+  font-weight: 600 !important;
+}
+
+/* ═══════════════════════════════════════════
+   TOOLBAR SESSION ACTIVE
+   ═══════════════════════════════════════════ */
+.client-controls, .client-toolbar {
+  background: rgba(255,255,255,0.96) !important;
+  backdrop-filter: blur(8px) !important;
+  border-bottom: 1px solid var(--border) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* ═══════════════════════════════════════════
+   SCROLLBARS ET SÉLECTION
+   ═══════════════════════════════════════════ */
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+::selection { background: rgba(59,130,246,0.2); color: var(--text-primary); }
+
+input[type="checkbox"] {
+  width: 16px !important;
+  height: 16px !important;
+  accent-color: var(--blue-600) !important;
+}
+
+input[type="radio"] { accent-color: var(--blue-600) !important; }
+"""
+with open('/tmp/guac-theme-build/theme.css', 'w') as f:
+    f.write(css)
+print(f"CSS écrit : {len(css)} caractères")
+PYEOF
+log "CSS Corporate Blue généré"
 
 # ════════════════════════════════════════
-section "4. Page de login personnalisée"
-# ════════════════════════════════════════
-cat > "$THEME_BUILD_DIR/loginPage.html.tpl" <<'LOGINHTML'
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<!-- Injecter un footer sur la page de login -->
-<meta name="guac:replace" content=".login-ui .login-dialog">
-</head>
-<body>
-<div class="login-ui-wrapper" style="
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-">
-  <div class="login-dialog">
-    <!-- Le contenu original de Guacamole sera ici -->
-  </div>
-  <p style="
-    color: #475569;
-    font-size: 12px;
-    margin-top: 24px;
-    font-family: 'Inter', sans-serif;
-  ">
-    © FOOTER_YEAR COMPANY_NAME — FOOTER_TEXT
-  </p>
-</div>
-</body>
-</html>
-LOGINHTML
-
-# Substituer les variables dans le template du footer
-sed -e "s/FOOTER_YEAR/${FOOTER_YEAR}/g" \
-    -e "s/COMPANY_NAME/${COMPANY_NAME}/g" \
-    -e "s/FOOTER_TEXT/${FOOTER_TEXT}/g" \
-    "$THEME_BUILD_DIR/loginPage.html.tpl" > "$THEME_BUILD_DIR/loginPage.html"
-rm "$THEME_BUILD_DIR/loginPage.html.tpl"
-
-# ════════════════════════════════════════
-section "5. Manifeste de l'extension"
+section "4. Manifeste"
 # ════════════════════════════════════════
 cat > "$THEME_BUILD_DIR/guac-manifest.json" <<MANIFEST
 {
   "guacamoleVersion" : "*",
-  "name"             : "${COMPANY_NAME} Theme",
-  "namespace"        : "${THEME_NAMESPACE}",
+  "name"             : "Corporate Blue Theme",
+  "namespace"        : "corporate-blue",
   "css"              : [ "theme.css" ],
   "resources"        : {
     "images/logo.svg" : "image/svg+xml"
   }
 }
 MANIFEST
-
 log "Manifeste créé"
 
 # ════════════════════════════════════════
-section "6. Création du fichier .jar"
+section "5. Création du .jar"
 # ════════════════════════════════════════
 cd "$THEME_BUILD_DIR"
 zip -r "/tmp/${THEME_JAR}" . -x "*.DS_Store" > /dev/null
-log "Fichier .jar créé : /tmp/${THEME_JAR}"
+log "Extension : /tmp/${THEME_JAR} ($(du -sh /tmp/${THEME_JAR} | cut -f1))"
 
 # ════════════════════════════════════════
-section "7. Installation de l'extension"
+section "6. Installation"
 # ════════════════════════════════════════
+mkdir -p "$EXTENSIONS_DIR"
 
-# Trouver le GUACAMOLE_HOME dans le conteneur
-GUAC_HOME=$(docker exec guacamole env | grep GUACAMOLE_HOME | cut -d= -f2 2>/dev/null || echo "")
+# Supprimer anciens thèmes
+rm -f "$EXTENSIONS_DIR"/*theme*.jar "$EXTENSIONS_DIR"/corporate*.jar
+cp "/tmp/${THEME_JAR}" "$EXTENSIONS_DIR/${THEME_JAR}"
+chmod 644 "$EXTENSIONS_DIR/${THEME_JAR}"
+log "Installé dans $EXTENSIONS_DIR/"
 
-if [ -z "$GUAC_HOME" ]; then
-  # Chercher dans les volumes montés
-  GUAC_HOME=$(docker inspect guacamole 2>/dev/null | python3 -c "
-import json,sys
-d=json.load(sys.stdin)
-mounts = d[0].get('Mounts', [])
-for m in mounts:
-    if 'guacamole' in m.get('Destination','').lower():
-        print(m['Destination'])
-        break
-" 2>/dev/null || echo "")
-fi
-
-# Créer le répertoire d'extensions dans le volume Docker
-# On utilise un volume dédié monté dans le conteneur
-log "Création du répertoire d'extensions..."
-mkdir -p /opt/guacamole-extensions
-
-# Copier le .jar dans le répertoire
-cp "/tmp/${THEME_JAR}" "/opt/guacamole-extensions/${THEME_JAR}"
-chmod 644 "/opt/guacamole-extensions/${THEME_JAR}"
-log "Extension copiée dans /opt/guacamole-extensions/"
-
-# ════════════════════════════════════════
-section "8. Mise à jour du docker-compose"
-# ════════════════════════════════════════
-
-# Vérifier si le volume extensions est déjà monté
-if grep -q "guacamole-extensions" /opt/guacamole/docker-compose.yml; then
-  warn "Volume extensions déjà configuré dans docker-compose.yml"
-else
-  log "Ajout du volume extensions dans docker-compose.yml..."
+# Ajouter le volume dans docker-compose si absent
+if ! grep -q "guacamole-extensions" /opt/guacamole/docker-compose.yml 2>/dev/null; then
+  warn "Ajout du volume extensions dans docker-compose.yml..."
   python3 << 'PYEOF'
 content = open('/opt/guacamole/docker-compose.yml').read()
-
-# Ajouter le volume dans le service guacamole
 old = '    environment:\n      GUACD_HOSTNAME: guacd'
 new = '    volumes:\n      - /opt/guacamole-extensions:/etc/guacamole/extensions:ro\n    environment:\n      GUACD_HOSTNAME: guacd'
-content = content.replace(old, new)
-
-# Ajouter GUACAMOLE_HOME si pas déjà présent
-if 'GUACAMOLE_HOME' not in content:
-    old2 = '      TOTP_ENABLED: "true"'
-    new2 = '      GUACAMOLE_HOME: /etc/guacamole\n      TOTP_ENABLED: "true"'
-    content = content.replace(old2, new2)
-
-open('/opt/guacamole/docker-compose.yml', 'w').write(content)
-print("docker-compose.yml mis à jour")
+if old in content:
+    open('/opt/guacamole/docker-compose.yml', 'w').write(content.replace(old, new))
+    print("OK")
 PYEOF
 fi
 
 # ════════════════════════════════════════
-section "9. Redémarrage de Guacamole"
+section "7. Redémarrage Guacamole"
 # ════════════════════════════════════════
 cd /opt/guacamole
 docker compose --env-file .env up -d --force-recreate guacamole
-log "Guacamole redémarré"
-
-log "Attente du démarrage (~20s)..."
+log "Guacamole redémarré, attente 20s..."
 sleep 20
-
-# Vérifier que l'extension est chargée
-docker logs guacamole 2>&1 | grep -i "theme\|extension\|loaded" | tail -5 || true
 
 # ════════════════════════════════════════
 section "Résumé"
 # ════════════════════════════════════════
 echo ""
-echo -e "${GREEN}════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}  ✅  Thème installé avec succès !${NC}"
-echo -e "${GREEN}════════════════════════════════════════════════${NC}"
+echo -e "${GREEN}══════════════════════════════════════════════════${NC}"
+echo -e "${GREEN}  ✅  Thème Corporate Blue installé !${NC}"
+echo -e "${GREEN}══════════════════════════════════════════════════${NC}"
 echo ""
-echo -e "  🎨 Extension : /opt/guacamole-extensions/${THEME_JAR}"
-echo -e "  🌐 Vérifier  : https://${DOMAIN_GUAC:-guac.votre-domaine.com}/guacamole/"
+echo -e "  🎨  Style      : Fond clair · Cartes blanches · Bleu corporate"
+echo -e "  🔤  Police     : DM Sans (professionnelle, lisible)"
+echo -e "  ✨  Animations : Hover cartes (+élévation), menus, modales"
+echo -e "  📦  Extension  : $EXTENSIONS_DIR/${THEME_JAR}"
 echo ""
 echo -e "${YELLOW}  Personnalisation :${NC}"
-echo -e "  - Modifier les couleurs : éditer les variables CSS dans"
-echo -e "    /tmp/guac-theme-build/theme.css puis relancer ce script"
-echo -e "  - Changer le logo : remplacer"
-echo -e "    /tmp/guac-theme-build/images/logo.svg"
+echo -e "  COMPANY_NAME='Mon Entreprise' PRIMARY_COLOR='#0ea5e9' sudo bash $0"
 echo ""
-echo -e "${BLUE}  Pour supprimer le thème :${NC}"
-echo -e "  sudo rm /opt/guacamole-extensions/${THEME_JAR}"
+echo -e "${BLUE}  Désinstaller :${NC}"
+echo -e "  sudo rm $EXTENSIONS_DIR/${THEME_JAR}"
 echo -e "  cd /opt/guacamole && sudo docker compose --env-file .env up -d --force-recreate guacamole"
 echo ""
