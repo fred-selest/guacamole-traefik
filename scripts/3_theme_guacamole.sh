@@ -110,24 +110,21 @@ section "3. CSS Corporate Blue"
 python3 << 'PYEOF'
 css = """/* ============================================================
    CORPORATE BLUE THEME — Apache Guacamole
-   Règle de base : NE PAS toucher au layout natif de Guacamole.
-   On stylise uniquement les couleurs, bordures, ombres,
-   typographie et animations — jamais display/grid/padding
-   sur les conteneurs parents.
+   Règles d'or :
+   - NE PAS utiliser de sélecteurs globaux (button, a, input...)
+   - NE PAS toucher au layout/display/padding des conteneurs
+   - Toujours scoper les règles à un contexte précis
    ============================================================ */
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
 
 /* ── Variables ──────────────────────────────────────────── */
 :root {
-  --blue-950:   #172554;
-  --blue-900:   #1e3a8a;
   --blue-800:   #1e40af;
   --blue-700:   #1d4ed8;
   --blue-600:   #2563eb;
   --blue-500:   #3b82f6;
   --blue-400:   #60a5fa;
   --blue-300:   #93c5fd;
-  --blue-100:   #dbeafe;
   --blue-50:    #eff6ff;
 
   --bg-page:    #f0f4f8;
@@ -141,28 +138,26 @@ css = """/* ============================================================
   --text-secondary: #475569;
   --text-muted:     #94a3b8;
 
-  --shadow-sm:  0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
-  --shadow-md:  0 4px 16px rgba(15,23,42,0.08), 0 2px 6px rgba(15,23,42,0.05);
-  --shadow-lg:  0 12px 40px rgba(15,23,42,0.12), 0 4px 12px rgba(15,23,42,0.06);
+  --shadow-sm:   0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+  --shadow-md:   0 4px 16px rgba(15,23,42,0.08), 0 2px 6px rgba(15,23,42,0.05);
+  --shadow-lg:   0 12px 40px rgba(15,23,42,0.12), 0 4px 12px rgba(15,23,42,0.06);
   --shadow-blue: 0 8px 32px rgba(37,99,235,0.18), 0 2px 8px rgba(37,99,235,0.1);
 
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
   --radius-xl: 20px;
-  --transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition:        all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-spring: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* ── Base ───────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; }
+/* ── Base (box-sizing uniquement — pas de reset margin) ─── */
+*, *::before, *::after { box-sizing: border-box; }
 
 html, body {
   font-family: 'DM Sans', 'Segoe UI', system-ui, sans-serif !important;
   background: var(--bg-page) !important;
   color: var(--text-primary) !important;
-  font-size: 15px !important;
-  line-height: 1.6 !important;
   -webkit-font-smoothing: antialiased !important;
 }
 
@@ -324,21 +319,35 @@ html, body {
 
 /* ═══════════════════════════════════════════
    NAVIGATION PRINCIPALE
+   .menu = conteneur nav de Guacamole
+   On stylise le fond et les liens UNIQUEMENT
+   dans ce contexte, jamais globalement.
    ═══════════════════════════════════════════ */
-header, .app-controls {
+.menu {
   background: #fff !important;
   border-bottom: 1px solid var(--border) !important;
   box-shadow: var(--shadow-sm) !important;
 }
 
-.app-controls a, header a {
+/* Liens nav — transparents pour ne pas hériter d'autres règles */
+.menu > a, .menu .menu-logo {
   color: var(--text-secondary) !important;
-  font-weight: 500 !important;
-  font-size: 14px !important;
-  transition: var(--transition) !important;
+  background: transparent !important;
+  font-weight: 600 !important;
 }
 
-.app-controls a:hover, header a:hover {
+/* Bouton/lien "guacadmin" dans la nav — transparent sur fond blanc */
+.menu .user-menu, .menu .user-menu > span,
+.menu .user-menu > a, .menu .user-menu > button {
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.menu .user-menu > a:hover,
+.menu .user-menu > button:hover {
+  background: var(--bg-hover) !important;
   color: var(--blue-700) !important;
 }
 
@@ -447,9 +456,13 @@ header, .app-controls {
 }
 
 /* ═══════════════════════════════════════════
-   BOUTONS GÉNÉRAUX
+   BOUTONS — UNIQUEMENT dans les dialogues
+   NE PAS utiliser "button {}" global : ça
+   colorie le bouton guacadmin dans la nav.
    ═══════════════════════════════════════════ */
-button, input[type="submit"] {
+.dialog button, .dialog input[type="submit"],
+.prompt button, .prompt input[type="submit"],
+.notification button {
   font-family: inherit !important;
   font-size: 14px !important;
   font-weight: 600 !important;
@@ -461,22 +474,20 @@ button, input[type="submit"] {
   border: none !important;
 }
 
-button:hover, input[type="submit"]:hover {
+.dialog button:hover, .dialog input[type="submit"]:hover {
   background: var(--blue-700) !important;
 }
 
-button.cancel, a.cancel {
+.dialog button.cancel {
   background: var(--bg-input) !important;
   color: var(--text-secondary) !important;
   border: 1px solid var(--border) !important;
 }
 
-button.danger, button.delete {
+.dialog button.danger, .dialog button.delete {
   background: #ef4444 !important;
 }
-button.danger:hover, button.delete:hover {
-  background: #dc2626 !important;
-}
+.dialog button.danger:hover { background: #dc2626 !important; }
 
 /* ═══════════════════════════════════════════
    FORMULAIRES
