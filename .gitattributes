@@ -1,0 +1,23 @@
+# Forcer LF pour tous les fichiers texte — évite les CRLF Windows
+* text=auto eol=lf
+
+# Scripts shell : toujours LF + exécutables
+*.sh text eol=lf
+
+# Fichiers de config et données
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.env  text eol=lf
+*.md   text eol=lf
+*.sql  text eol=lf
+*.conf text eol=lf
+*.css  text eol=lf
+
+# Binaires : pas de conversion
+*.jar  binary
+*.png  binary
+*.jpg  binary
+*.gif  binary
+*.ico  binary
+*.zip  binary
