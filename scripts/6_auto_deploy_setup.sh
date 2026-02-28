@@ -41,7 +41,7 @@ REPO_OWNER_HOME=$(getent passwd "$REPO_OWNER" | cut -d: -f6)
 section "1. Vérification du dépôt"
 [[ -d "$REPO_DIR/.git" ]] || err "Pas un dépôt git : $REPO_DIR"
 [[ -f "$DEPLOY_SCRIPT" ]] || err "Script introuvable : $DEPLOY_SCRIPT"
-BRANCH=$(git -C "$REPO_DIR" rev-parse --abbrev-ref HEAD)
+BRANCH="${BRANCH:-main}"
 REMOTE_URL=$(git -C "$REPO_DIR" remote get-url origin 2>/dev/null || echo "?")
 log "Dépôt  : $REPO_DIR"
 log "Branch : $BRANCH"
