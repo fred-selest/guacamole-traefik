@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ============================================================
-#  THEME GUACAMOLE — Corporate Blue Edition
+#  THEME GUACAMOLE — Corporate Blue Edition (Révisé)
 #  Usage : sudo bash 3_theme_guacamole.sh
 #  Style : Bleu corporate professionnel, cartes redessinées,
 #          animations fluides, typographie soignée (DM Sans)
@@ -16,6 +16,7 @@ ACCENT_COLOR="${ACCENT_COLOR:-#3b82f6}"
 THEME_BUILD_DIR="/tmp/guac-theme-build"
 THEME_JAR="corporate-theme.jar"
 EXTENSIONS_DIR="/opt/guacamole-extensions"
+GUACAMOLE_DIR="/opt/guacamole"
 # ------------------------------------------------------------
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
@@ -27,6 +28,20 @@ section() { echo -e "\n${BLUE}══ $1 ══${NC}"; }
 [[ $EUID -ne 0 ]] && err "Lance ce script en root : sudo bash $0"
 command -v zip    &>/dev/null || apt-get install -y -qq zip
 command -v docker &>/dev/null || err "Docker manquant"
+
+# Fonction pour vérifier si Guacamole est en cours d'exécution
+check_guacamole_running() {
+    if [[ -d "$GUACAMOLE_DIR" ]] && [[ -f "$GUACAMOLE_DIR/.env" ]]; then
+        cd "$GUACAMOLE_DIR"
+        if docker compose --env-file .env ps | grep -q "guacamole.*Up"; then
+            return 0
+        else
+            return 1
+        fi
+    else
+        return 1
+    fi
+}
 
 # ════════════════════════════════════════
 section "Configuration du thème"
@@ -689,9 +704,10 @@ chmod 644 "$EXTENSIONS_DIR/${THEME_JAR}"
 log "Installé dans $EXTENSIONS_DIR/"
 
 # Ajouter le volume dans docker-compose si absent
-if ! grep -q "guacamole-extensions" /opt/guacamole/docker-compose.yml 2>/dev/null; then
-  warn "Ajout du volume extensions dans docker-compose.yml..."
-  python3 << 'PYEOF'
+if [[ -f "$GUACAMOLE_DIR/docker-compose.yml" ]]; then
+  if ! grep -q "guacamole-extensions" "$GUACAMOLE_DIR/docker-compose.yml" 2>/dev/null; then
+    warn "Ajout du volume extensions dans docker-compose.yml..."
+    python3 << 'PYEOF'
 content = open('/opt/guacamole/docker-compose.yml').read()
 old = '    environment:\n      GUACD_HOSTNAME: guacd'
 new = '    volumes:\n      - /opt/guacamole-extensions:/etc/guacamole/extensions:ro\n    environment:\n      GUACD_HOSTNAME: guacd'
@@ -699,15 +715,35 @@ if old in content:
     open('/opt/guacamole/docker-compose.yml', 'w').write(content.replace(old, new))
     print("OK")
 PYEOF
+  fi
+else
+  err "Fichier docker-compose.yml introuvable dans $GUACAMOLE_DIR"
 fi
 
 # ════════════════════════════════════════
 section "7. Redémarrage Guacamole"
 # ════════════════════════════════════════
-cd /opt/guacamole
+cd "$GUACAMOLE_DIR"
+
+# Vérifier si Guacamole est en cours d'exécution avant de tenter le redémarrage
+if check_guacamole_running; then
+    log "Arrêt du service Guacamole..."
+    docker compose --env-file .env down
+else
+    warn "Guacamole n'était pas en cours d'exécution"
+fi
+
+log "Démarrage du service Guacamole avec le nouveau thème..."
 docker compose --env-file .env up -d --force-recreate guacamole
-log "Guacamole redémarré, attente 20s..."
-sleep 20
+log "Guacamole redémarré, attente 25s pour que le service soit pleinement opérationnel..."
+sleep 25
+
+# Vérifier que le service est bien démarré
+if check_guacamole_running; then
+    log "Guacamole est opérationnel"
+else
+    warn "Guacamole semble avoir des difficultés à démarrer"
+fi
 
 # ════════════════════════════════════════
 section "Résumé"
