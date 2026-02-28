@@ -275,29 +275,6 @@ css = f"""/* ============================================================
   --spring:    cubic-bezier(0.34, 1.56, 0.64, 1);
 }}
 
-/* ══════════════════════════════════════════
-   BADGE DE VÉRIFICATION
-   Visible dans TOUS les coins bas-droite.
-   Prouve que le thème est chargé par Guacamole.
-   Supprimer ce bloc une fois confirmé.
-   ══════════════════════════════════════════ */
-body::after {{
-  content: 'Corporate Blue ✓' !important;
-  position: fixed !important;
-  bottom: 10px !important;
-  right: 10px !important;
-  z-index: 2147483647 !important;
-  background: #1d4ed8 !important;
-  color: #fff !important;
-  font-family: 'DM Sans', monospace !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  padding: 4px 10px !important;
-  border-radius: 20px !important;
-  box-shadow: 0 2px 8px rgba(29,78,216,0.4) !important;
-  pointer-events: none !important;
-  letter-spacing: 0.3px !important;
-}}
 
 /* ══════════════════════════════════════════
    BASE — box-sizing seulement, PAS de margin reset
@@ -889,6 +866,23 @@ else
     warn "Guacamole semble avoir des difficultés à démarrer"
 fi
 
+# Chercher le chargement de l'extension dans les logs
+_EXT_LOG=$(docker logs guacamole 2>&1 | grep -i "extension\|corporate\|corporate-blue\|theme" | tail -5 || true)
+if [[ -n "$_EXT_LOG" ]]; then
+    ok "Extension détectée dans les logs :"
+    echo "$_EXT_LOG" | sed 's/^/    /'
+else
+    warn "Aucune ligne d'extension dans les logs récents"
+    warn "Vérifier manuellement : sudo docker logs guacamole 2>&1 | grep -i extension"
+fi
+
+# Vérifier le contenu du .jar installé
+ok "Contenu du .jar installé :"
+unzip -p "$EXTENSIONS_DIR/${THEME_JAR}" theme.css 2>/dev/null \
+    | grep -E "nav =|\.connection|--primary|--bg-nav" \
+    | head -10 \
+    | sed 's/^/    /'
+
 # ════════════════════════════════════════
 section "Résumé"
 # ════════════════════════════════════════
@@ -903,11 +897,9 @@ echo -e "  Extension   : $EXTENSIONS_DIR/${THEME_JAR}"
 echo -e "  Nav CSS     : ${NAV_SELECTOR}"
 echo ""
 echo -e "${YELLOW}  Pour confirmer que le thème est actif :${NC}"
-echo -e "  → Ouvrir Guacamole dans le navigateur"
-echo -e "  → Un badge bleu '${GREEN}Corporate Blue ✓${NC}' doit apparaître en bas à droite"
-echo -e "  → Si le badge est absent = l'extension n'est pas chargée"
+echo -e "  → Ouvrir Guacamole dans le navigateur — la barre de navigation doit être bleue"
 echo ""
-echo -e "${BLUE}  Diagnostics si le badge est absent :${NC}"
+echo -e "${BLUE}  Diagnostics si le thème est absent :${NC}"
 echo -e "  sudo docker logs guacamole 2>&1 | grep -i 'extension\\|error\\|warn'"
 echo -e "  sudo docker inspect guacamole | grep guacamole-extensions"
 echo -e "  unzip -p $EXTENSIONS_DIR/${THEME_JAR} theme.css | head -5"
